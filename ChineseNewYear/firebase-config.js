@@ -21,7 +21,7 @@ let isFirebaseEnabled = false;
 
 try {
   // 檢查配置是否已設定
-  if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+  if (firebaseConfig.apiKey !== "AIzaSyBbBNjiBz1app7yySjHVkq4teiM18Yxv0I") {
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
     isFirebaseEnabled = true;
