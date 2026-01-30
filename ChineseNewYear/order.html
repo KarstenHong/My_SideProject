@@ -327,14 +327,140 @@
         }
       }
 
+      /* 手機版：改為可滾動的長頁面 */
       @media (max-width: 768px) {
-        .dishes-grid {
-          grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        body {
+          overflow: auto !important;
+        }
+
+        .container {
+          height: auto !important;
+          min-height: 100vh;
+          overflow: visible !important;
+        }
+
+        .order-content {
+          flex-direction: column;
+          overflow: visible !important;
+          padding: 10px;
           gap: 10px;
         }
 
+        .dishes-panel {
+          flex: none !important;
+          height: auto !important;
+          overflow: visible !important;
+          max-height: none !important;
+          padding: 12px;
+        }
+
+        .customer-panel {
+          flex: none !important;
+          height: auto !important;
+          overflow: visible !important;
+        }
+
+        .dishes-grid {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 10px;
+        }
+
+        .dish-card {
+          padding: 10px;
+        }
+
+        .dish-name {
+          font-size: 0.85em;
+        }
+
+        .dish-price {
+          font-size: 0.85em;
+        }
+
+        .qty-btn {
+          width: 36px;
+          height: 36px;
+          font-size: 1.3em;
+        }
+
+        .qty-display {
+          min-width: 30px;
+          font-size: 1.1em;
+        }
+
+        header {
+          padding: 12px 15px;
+        }
+
         header h1 {
+          font-size: 1.3em;
+        }
+
+        header p {
+          font-size: 0.85em;
+        }
+
+        .nav-bar {
+          padding: 8px 15px;
+        }
+
+        .nav-bar a {
+          padding: 6px 12px;
+          font-size: 0.9em;
+        }
+
+        .panel-title {
+          font-size: 1.1em;
+          margin-bottom: 12px;
+          padding-bottom: 8px;
+        }
+
+        .customer-form {
+          overflow: visible !important;
+        }
+
+        .order-summary {
+          padding: 12px;
+          position: sticky;
+          bottom: 0;
+          z-index: 100;
+          margin: 10px -12px -15px -12px;
+          border-radius: 0;
+        }
+
+        .total-display {
           font-size: 1.5em;
+        }
+
+        .action-buttons {
+          gap: 8px;
+        }
+
+        .btn-submit-order,
+        .btn-reset-order {
+          padding: 10px;
+          font-size: 0.95em;
+        }
+      }
+
+      /* 更小的螢幕 */
+      @media (max-width: 400px) {
+        .dishes-grid {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 8px;
+        }
+
+        .dish-card {
+          padding: 8px;
+        }
+
+        .dish-name {
+          font-size: 0.8em;
+        }
+
+        .qty-btn {
+          width: 32px;
+          height: 32px;
         }
       }
     </style>

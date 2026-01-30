@@ -98,47 +98,6 @@
         line-height: 1.5;
       }
 
-      .action-buttons {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 15px;
-      }
-
-      .btn-action {
-        padding: 18px 30px;
-        border: none;
-        border-radius: 12px;
-        font-size: 1.2em;
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-      }
-
-      .btn-order {
-        background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
-        color: white;
-      }
-
-      .btn-order:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 20px rgba(39, 174, 96, 0.4);
-      }
-
-      .btn-manage {
-        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-        color: white;
-      }
-
-      .btn-manage:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 20px rgba(52, 152, 219, 0.4);
-      }
-
       .info-section {
         margin-top: 30px;
         padding: 20px;
@@ -173,34 +132,12 @@
         font-weight: bold;
       }
 
-      .legacy-link {
-        text-align: center;
-        margin-top: 20px;
-        padding-top: 20px;
-        border-top: 1px solid #ddd;
-      }
-
-      .legacy-link a {
-        color: #7f8c8d;
-        text-decoration: none;
-        font-size: 0.9em;
-      }
-
-      .legacy-link a:hover {
-        color: #e74c3c;
-        text-decoration: underline;
-      }
-
       @media (max-width: 768px) {
         .welcome-header h1 {
           font-size: 2em;
         }
 
         .feature-grid {
-          grid-template-columns: 1fr;
-        }
-
-        .action-buttons {
           grid-template-columns: 1fr;
         }
       }
@@ -217,42 +154,26 @@
         <div class="feature-grid">
           <div class="feature-card" onclick="location.href = 'order.html'">
             <div class="feature-icon">📝</div>
-            <div class="feature-title">快速點餐</div>
-            <div class="feature-desc">一頁式介面，快速完成年菜訂購</div>
+            <div class="feature-title">開始點餐</div>
+            <div class="feature-desc">開始選擇您想吃的年菜吧！</div>
           </div>
 
           <div class="feature-card" onclick="location.href = 'management.html'">
             <div class="feature-icon">📊</div>
             <div class="feature-title">訂單管理</div>
-            <div class="feature-desc">查詢、編輯訂單與統計分析</div>
+            <div class="feature-desc">查詢已訂購的訂單</div>
           </div>
-        </div>
-
-        <div class="action-buttons">
-          <a href="order.html" class="btn-action btn-order">
-            <span>📝</span>
-            <span>開始點餐</span>
-          </a>
-          <a href="management.html" class="btn-action btn-manage">
-            <span>📊</span>
-            <span>管理訂單</span>
-          </a>
         </div>
 
         <div class="info-section">
           <h3>系統特色</h3>
           <ul>
             <li>一頁式點餐介面，無需滾動即可完成訂購</li>
-            <li>即時統計訂單數量與總金額</li>
             <li>支援訂單搜尋、編輯與刪除（管理員模式）</li>
             <li>可匯出 Excel 與 PDF 報表</li>
             <li>Firebase 雲端同步，資料安全不遺失</li>
             <li>個資保護，自動隱碼顯示</li>
           </ul>
-        </div>
-
-        <div class="legacy-link">
-          <a href="ChineseNewYear_Dishes.html">使用舊版完整介面 →</a>
         </div>
       </div>
     </div>
