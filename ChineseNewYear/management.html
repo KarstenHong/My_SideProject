@@ -51,7 +51,9 @@
   <body>
     <div class="container">
       <header>
-        <h1>🧧 洪師傅2026金馬年菜 🧧</h1>
+        <h1 id="adminTrigger" style="cursor: default">
+          🧧 洪師傅2026金馬年菜 🧧
+        </h1>
         <p>訂單管理與統計系統</p>
       </header>
 
@@ -373,5 +375,35 @@
     <script src="firebase-config.js"></script>
 
     <script src="ChineseNewYear_Dishes.js"></script>
+
+    <script>
+      // 手機版管理員模式觸發：連續點擊標題 5 次
+      (function () {
+        let clickCount = 0;
+        let clickTimer = null;
+        const trigger = document.getElementById("adminTrigger");
+
+        if (trigger) {
+          trigger.addEventListener("click", function () {
+            clickCount++;
+
+            // 重置計時器
+            if (clickTimer) clearTimeout(clickTimer);
+
+            // 3 秒內沒有繼續點擊則重置
+            clickTimer = setTimeout(() => {
+              clickCount = 0;
+            }, 3000);
+
+            // 達到 5 次點擊
+            if (clickCount >= 5) {
+              clickCount = 0;
+              if (clickTimer) clearTimeout(clickTimer);
+              toggleAdminMode();
+            }
+          });
+        }
+      })();
+    </script>
   </body>
 </html>
