@@ -15,12 +15,26 @@ window.toggleAdminMode = function (password) {
       isAdminMode = true;
       console.log(
         "%c🔓 管理員模式已啟用 ✓",
-        "color: #27ae60; font-size: 16px; font-weight: bold;"
+        "color: #27ae60; font-size: 16px; font-weight: bold;",
       );
       console.log(
         "%c現在可以編輯和刪除訂單",
-        "color: #27ae60; font-size: 14px;"
+        "color: #27ae60; font-size: 14px;",
       );
+
+      // 顯示統計面板
+      const statsPanel = document.querySelector(".statistics-panel.admin-only");
+      if (statsPanel) {
+        statsPanel.style.setProperty("display", "grid", "important");
+      }
+
+      // 顯示菜品管理區
+      const dishManagement = document.querySelector(
+        ".dish-management-section.admin-only",
+      );
+      if (dishManagement) {
+        dishManagement.style.setProperty("display", "block", "important");
+      }
 
       // 重新載入訂單以顯示編輯/刪除按鈕
       loadOrders();
@@ -37,8 +51,22 @@ window.toggleAdminMode = function (password) {
     isAdminMode = false;
     console.log(
       "%c🔒 管理員模式已關閉",
-      "color: #e74c3c; font-size: 16px; font-weight: bold;"
+      "color: #e74c3c; font-size: 16px; font-weight: bold;",
     );
+
+    // 隱藏統計面板
+    const statsPanel = document.querySelector(".statistics-panel.admin-only");
+    if (statsPanel) {
+      statsPanel.style.setProperty("display", "none", "important");
+    }
+
+    // 隱藏菜品管理區
+    const dishManagement = document.querySelector(
+      ".dish-management-section.admin-only",
+    );
+    if (dishManagement) {
+      dishManagement.style.setProperty("display", "none", "important");
+    }
 
     // 重新載入訂單以隱藏編輯/刪除按鈕
     loadOrders();
@@ -131,7 +159,7 @@ function startFirebaseRealtimeListener() {
     (error) => {
       console.error("❌ Firebase 監聽失敗:", error);
       showAlert("雲端連線中斷，將使用本地資料", "warning");
-    }
+    },
   );
 }
 
@@ -256,7 +284,7 @@ function startDishesListener() {
       },
       (error) => {
         console.error("❌ 監聽菜品失敗:", error);
-      }
+      },
     );
 }
 
@@ -361,7 +389,7 @@ window.toggleDishManagement = function () {
       `%c菜品管理功能已${isHidden ? "開啟" : "關閉"} ✓`,
       `color: ${
         isHidden ? "#27ae60" : "#e74c3c"
-      }; font-size: 14px; font-weight: bold;`
+      }; font-size: 14px; font-weight: bold;`,
     );
     return isHidden ? "已開啟" : "已關閉";
   }
@@ -453,20 +481,19 @@ document.addEventListener("DOMContentLoaded", async function () {
   console.log("DISHES 陣列:", DISHES);
   console.log("orders 陣列長度:", orders.length);
 
-  // 開發者提示
+  // 開發者提示（不顯示密碼）
   console.log(
     "%c💡 管理員功能",
-    "color: #f39c12; font-size: 16px; font-weight: bold;"
+    "color: #f39c12; font-size: 16px; font-weight: bold;",
   );
   console.log(
     "%c啟用管理員模式：toggleAdminMode() 或按 Ctrl+Shift+A",
-    "color: #3498db; font-size: 14px;"
+    "color: #3498db; font-size: 14px;",
   );
   console.log(
     "%c顯示菜品管理：toggleDishManagement()",
-    "color: #3498db; font-size: 14px;"
+    "color: #3498db; font-size: 14px;",
   );
-  console.log("%c預設密碼：admin2026", "color: #95a5a6; font-size: 12px;");
 
   // Firebase 即時同步
   if (isFirebaseEnabled) {
@@ -492,26 +519,78 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   renderDishesInForm(); // 渲染菜品列表
   loadOrders();
+  updateStatistics(); // 更新統計面板
   setupEventListeners();
   updateGroupOptions();
 });
 
+// 更新統計面板
+function updateStatistics() {
+  const totalOrdersEl = document.getElementById("totalOrders");
+  const totalRevenueEl = document.getElementById("totalRevenue");
+  const popularDishEl = document.getElementById("popularDish");
+
+  // 如果不在有統計面板的頁面，直接返回
+  if (!totalOrdersEl || !totalRevenueEl || !popularDishEl) {
+    return;
+  }
+
+  // 計算總訂單數
+  totalOrdersEl.textContent = orders.length;
+
+  // 計算總金額
+  const totalRevenue = orders.reduce(
+    (sum, order) => sum + (order.total || 0),
+    0,
+  );
+  totalRevenueEl.textContent = `NT$ ${totalRevenue.toLocaleString()}`;
+
+  // 計算熱門菜品
+  const dishCounts = {};
+  orders.forEach((order) => {
+    if (order.dishQuantities) {
+      Object.keys(order.dishQuantities).forEach((dishName) => {
+        const qty = order.dishQuantities[dishName] || 0;
+        if (qty > 0) {
+          dishCounts[dishName] = (dishCounts[dishName] || 0) + qty;
+        }
+      });
+    }
+  });
+
+  const sortedDishes = Object.entries(dishCounts).sort((a, b) => b[1] - a[1]);
+  if (sortedDishes.length > 0) {
+    popularDishEl.textContent = `${sortedDishes[0][0]} (${sortedDishes[0][1]})`;
+  } else {
+    popularDishEl.textContent = "-";
+  }
+}
+
 // 設置事件監聽器
 function setupEventListeners() {
   // 表單提交
-  document
-    .getElementById("orderForm")
-    .addEventListener("submit", handleFormSubmit);
+  const orderForm = document.getElementById("orderForm");
+  if (orderForm) {
+    // ⚠️ 檢查是否為 order.html（它有自己的 submitOrder 函數）
+    // order.html 使用 inline onsubmit="submitOrder(event)"
+    // 只有其他頁面（ChineseNewYear_Dishes.html 等）才使用這個事件監聽器
+    const hasInlineSubmit = orderForm.getAttribute("onsubmit");
+    if (!hasInlineSubmit) {
+      orderForm.addEventListener("submit", handleFormSubmit);
+    }
+  }
 
   // 搜索輸入即時搜尋
-  document
-    .getElementById("searchInput")
-    .addEventListener("input", searchOrders);
+  const searchInput = document.getElementById("searchInput");
+  if (searchInput) {
+    searchInput.addEventListener("input", searchOrders);
+  }
 
   // 群組篩選
-  document
-    .getElementById("groupFilter")
-    .addEventListener("change", searchOrders);
+  const groupFilter = document.getElementById("groupFilter");
+  if (groupFilter) {
+    groupFilter.addEventListener("change", searchOrders);
+  }
 
   // 離開頁面前的提醒
   window.addEventListener("beforeunload", function (e) {
@@ -616,7 +695,11 @@ function calculateTotal() {
       total += price * quantity;
     });
   }
-  document.getElementById("orderTotal").textContent = total.toLocaleString();
+
+  const orderTotalEl = document.getElementById("orderTotal");
+  if (orderTotalEl) {
+    orderTotalEl.textContent = total.toLocaleString();
+  }
 }
 
 // 新增群組
@@ -640,30 +723,37 @@ function updateGroupOptions() {
   const groupSelect = document.getElementById("customerGroup");
   const groupFilter = document.getElementById("groupFilter");
 
+  // 如果不在有這些元素的頁面，直接返回
+  if (!groupSelect && !groupFilter) {
+    return;
+  }
+
   // 更新表單群組選項
-  groupSelect.innerHTML = '<option value="">請選擇或新增群組</option>';
-  groups.forEach((group) => {
-    const option = document.createElement("option");
-    option.value = group;
-    option.textContent = group;
-    groupSelect.appendChild(option);
-  });
+  if (groupSelect) {
+    groupSelect.innerHTML = '<option value="">請選擇或新增群組</option>';
+    groups.forEach((group) => {
+      const option = document.createElement("option");
+      option.value = group;
+      option.textContent = group;
+      groupSelect.appendChild(option);
+    });
+  }
 
   // 更新篩選群組選項
-  groupFilter.innerHTML = '<option value="">所有群組</option>';
-  groups.forEach((group) => {
-    const option = document.createElement("option");
-    option.value = group;
-    option.textContent = group;
-    groupFilter.appendChild(option);
-  });
+  if (groupFilter) {
+    groupFilter.innerHTML = '<option value="">所有群組</option>';
+    groups.forEach((group) => {
+      const option = document.createElement("option");
+      option.value = group;
+      option.textContent = group;
+      groupFilter.appendChild(option);
+    });
+  }
 }
 
 // 處理表單提交
 async function handleFormSubmit(e) {
   e.preventDefault();
-
-  console.log("表單提交開始...");
 
   const orderNumber = document.getElementById("orderNumber").value.trim();
 
@@ -681,8 +771,6 @@ async function handleFormSubmit(e) {
     note: document.getElementById("customerNote").value,
   };
 
-  console.log("客戶資料:", customerData);
-
   // 收集數量 > 0 的菜品（只從訂購表單中收集）
   const dishQuantities = {};
   let hasOrder = false;
@@ -699,9 +787,6 @@ async function handleFormSubmit(e) {
       if (quantity > 0) hasOrder = true;
     }
   });
-
-  console.log("菜品數量:", dishQuantities);
-  console.log("是否有訂單:", hasOrder);
 
   if (!hasOrder) {
     showAlert("請至少訂購一個菜品（數量 > 0）", "error");
@@ -727,7 +812,7 @@ async function handleFormSubmit(e) {
   console.log("準備儲存的訂單:", orderData);
 
   try {
-    // 直接新增到 Firebase（會自動觸發即時監聽更新畫面）
+    // 直接新增到 Firebase（會自動觸發即時監聯更新畫面）
     await addOrderToFirebase(orderData);
 
     console.log("✅ 訂單已成功新增");
@@ -735,34 +820,40 @@ async function handleFormSubmit(e) {
     resetForm();
     showAlert("訂單已成功建立！", "success");
 
-    document
-      .querySelector(".orders-section")
-      .scrollIntoView({ behavior: "smooth" });
+    const ordersSection = document.querySelector(".orders-section");
+    if (ordersSection) {
+      ordersSection.scrollIntoView({ behavior: "smooth" });
+    }
   } catch (error) {
     console.error("新增訂單失敗:", error);
     showAlert("新增訂單失敗，請稍後再試", "error");
   }
-
-  resetForm();
-
-  showAlert("訂單已成功建立！", "success");
-  document
-    .querySelector(".orders-section")
-    .scrollIntoView({ behavior: "smooth" });
 }
 
 // 重置表單
 function resetForm() {
-  document.getElementById("orderForm").reset();
+  const form = document.getElementById("orderForm");
+  if (!form) {
+    return; // 不在有表單的頁面
+  }
+
+  form.reset();
   document.querySelectorAll(".quantity-box").forEach((box) => {
     const display = box.querySelector(".quantity-display");
     display.textContent = "0";
     box.classList.remove("has-value");
   });
   document.querySelectorAll(".dish-input-row").forEach((row) => {
-    row.querySelector(".dish-subtotal").textContent = "NT$ 0";
+    const subtotalEl = row.querySelector(".dish-subtotal");
+    if (subtotalEl) {
+      subtotalEl.textContent = "NT$ 0";
+    }
   });
-  document.getElementById("orderTotal").textContent = "0";
+
+  const orderTotalEl = document.getElementById("orderTotal");
+  if (orderTotalEl) {
+    orderTotalEl.textContent = "0";
+  }
 }
 
 // 保存訂單到 LocalStorage
@@ -779,6 +870,12 @@ function saveOrders() {
 // 載入訂單（表格版本 + 分頁）
 function loadOrders() {
   const tbody = document.getElementById("ordersTableBody");
+
+  // 如果不在訂單管理頁面，直接返回
+  if (!tbody) {
+    console.log("目前頁面不包含訂單表格，跳過 loadOrders");
+    return;
+  }
 
   // 確保 filteredOrders 有值（僅在未初始化時設定）
   if (!Array.isArray(filteredOrders)) {
@@ -862,7 +959,7 @@ function loadOrders() {
           <td data-label="聯絡電話">${displayPhone}</td>
           <td data-label="所屬群組">${displayGroup}</td>
           <td class="order-date" data-label="訂購日期">${formatDate(
-            order.createdAt
+            order.createdAt,
           )}</td>
           <td class="order-total" data-label="總金額">NT$ ${order.total.toLocaleString()}</td>
           <td class="order-actions" data-label="操作">
@@ -879,33 +976,44 @@ function loadOrders() {
   // 更新分頁資訊
   updatePaginationInfo();
   updatePaginationButtons();
+  updateStatistics(); // 更新統計面板
 }
 
 // 更新分頁資訊顯示
 function updatePaginationInfo() {
+  const pageInfoEl = document.getElementById("pageInfo");
+  const currentPageEl = document.getElementById("currentPage");
+
+  if (!pageInfoEl || !currentPageEl) {
+    return; // 不在訂單管理頁面
+  }
+
   const totalOrders = filteredOrders.length;
   const totalPages = Math.ceil(totalOrders / pageSize);
   const startIndex = totalOrders === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const endIndex = Math.min(currentPage * pageSize, totalOrders);
 
-  document.getElementById(
-    "pageInfo"
-  ).textContent = `顯示第 ${startIndex}-${endIndex} 筆，共 ${totalOrders} 筆訂單`;
-  document.getElementById(
-    "currentPage"
-  ).textContent = `第 ${currentPage} / ${totalPages} 頁`;
+  pageInfoEl.textContent = `顯示第 ${startIndex}-${endIndex} 筆，共 ${totalOrders} 筆訂單`;
+  currentPageEl.textContent = `第 ${currentPage} / ${totalPages} 頁`;
 }
 
 // 更新分頁按鈕狀態
 function updatePaginationButtons() {
+  const firstBtn = document.getElementById("firstPageBtn");
+  const prevBtn = document.getElementById("prevPageBtn");
+  const nextBtn = document.getElementById("nextPageBtn");
+  const lastBtn = document.getElementById("lastPageBtn");
+
+  if (!firstBtn || !prevBtn || !nextBtn || !lastBtn) {
+    return; // 不在訂單管理頁面
+  }
+
   const totalPages = Math.ceil(filteredOrders.length / pageSize);
 
-  document.getElementById("firstPageBtn").disabled = currentPage === 1;
-  document.getElementById("prevPageBtn").disabled = currentPage === 1;
-  document.getElementById("nextPageBtn").disabled =
-    currentPage === totalPages || totalPages === 0;
-  document.getElementById("lastPageBtn").disabled =
-    currentPage === totalPages || totalPages === 0;
+  firstBtn.disabled = currentPage === 1;
+  prevBtn.disabled = currentPage === 1;
+  nextBtn.disabled = currentPage === totalPages || totalPages === 0;
+  lastBtn.disabled = currentPage === totalPages || totalPages === 0;
 }
 
 // 換頁功能
@@ -964,7 +1072,7 @@ function showOrderDetail(orderId) {
 
   // 計算訂購的菜品
   const orderedDishes = DISHES.filter(
-    (dish) => order.dishQuantities[dish.name] > 0
+    (dish) => order.dishQuantities[dish.name] > 0,
   );
 
   // 生成詳情內容
@@ -1085,9 +1193,9 @@ function formatDate(dateInput) {
 
   return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(
     2,
-    "0"
+    "0",
   )}/${String(date.getDate()).padStart(2, "0")} ${String(
-    date.getHours()
+    date.getHours(),
   ).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
@@ -1102,8 +1210,8 @@ function editOrder(orderId) {
     const hasValueClass = qty > 0 ? "has-value" : "";
     return `
             <div class="dish-input-row" data-name="${dish.name}" data-price="${
-      dish.price
-    }">
+              dish.price
+            }">
                 <div class="dish-name">${dish.name}</div>
                 <div class="dish-price">NT$ ${dish.price.toLocaleString()}</div>
                 <div class="quantity-box ${hasValueClass}" onclick="incrementQuantity(this)">
@@ -1151,7 +1259,7 @@ function editOrder(orderId) {
                                     order.customer.group === group
                                       ? "selected"
                                       : ""
-                                  }>${group}</option>`
+                                  }>${group}</option>`,
                               )
                               .join("")}
                         </select>
@@ -1245,7 +1353,7 @@ function calculateEditTotal() {
 }
 
 // 處理編輯表單提交
-function handleEditSubmit(e, orderId) {
+async function handleEditSubmit(e, orderId) {
   e.preventDefault();
 
   const orderIndex = orders.findIndex((o) => o.id === orderId);
@@ -1258,7 +1366,7 @@ function handleEditSubmit(e, orderId) {
   // 檢查訂單號碼是否與其他訂單重複（排除自己）
   const isDuplicate = orders.some(
     (order, index) =>
-      index !== orderIndex && order.orderNumber === editOrderNumber
+      index !== orderIndex && order.orderNumber === editOrderNumber,
   );
   if (isDuplicate) {
     showAlert("此訂單號碼已存在，請使用不同的號碼！", "error");
@@ -1298,20 +1406,38 @@ function handleEditSubmit(e, orderId) {
     total += dish.price * qty;
   });
 
-  orders[orderIndex] = {
-    ...orders[orderIndex],
+  const updatedOrderData = {
     orderNumber: editOrderNumber,
     customer: customerData,
     dishQuantities: dishQuantities,
     total: total,
   };
 
-  saveOrders();
-  filteredOrders = [...orders]; // 重置為全部訂單
-  loadOrders();
-  closeEditModal();
+  try {
+    if (isFirebaseEnabled && orders[orderIndex].firebaseId) {
+      // Firebase 模式：更新到 Firebase（即時監聽會自動更新畫面）
+      await updateOrderInFirebase(
+        orders[orderIndex].firebaseId,
+        updatedOrderData,
+      );
+      showAlert("訂單已成功更新！", "success");
+    } else {
+      // 本地模式：更新陣列並儲存到 localStorage
+      orders[orderIndex] = {
+        ...orders[orderIndex],
+        ...updatedOrderData,
+      };
+      saveOrders();
+      filteredOrders = [...orders]; // 重置為全部訂單
+      loadOrders();
+      showAlert("訂單已成功更新！", "success");
+    }
 
-  showAlert("訂單已成功更新！", "success");
+    closeEditModal();
+  } catch (error) {
+    console.error("更新訂單失敗:", error);
+    showAlert("更新訂單失敗：" + (error.message || "請稍後再試"), "error");
+  }
 }
 
 // 關閉編輯Modal
@@ -1353,8 +1479,16 @@ function deleteOrder(orderId) {
 
 // 搜尋訂單
 function searchOrders() {
-  const searchTerm = document.getElementById("searchInput").value.toLowerCase();
-  const groupFilter = document.getElementById("groupFilter").value;
+  const searchInput = document.getElementById("searchInput");
+  const groupFilterEl = document.getElementById("groupFilter");
+
+  // 如果不在搜尋頁面，直接返回
+  if (!searchInput || !groupFilterEl) {
+    return;
+  }
+
+  const searchTerm = searchInput.value.toLowerCase();
+  const groupFilter = groupFilterEl.value;
 
   // 重置到第一頁
   currentPage = 1;
@@ -1365,7 +1499,7 @@ function searchOrders() {
   // 群組篩選
   if (groupFilter) {
     filteredOrders = filteredOrders.filter(
-      (order) => order.customer.group === groupFilter
+      (order) => order.customer.group === groupFilter,
     );
   }
 
@@ -1383,7 +1517,7 @@ function searchOrders() {
           (dish) =>
             dish.name.toLowerCase().includes(searchTerm) &&
             order.dishQuantities &&
-            order.dishQuantities[dish.name] > 0
+            order.dishQuantities[dish.name] > 0,
         )
       );
     });
@@ -1397,7 +1531,7 @@ function searchOrders() {
     console.log(
       `🔍 搜尋條件：${filterInfo.join(", ")} | 結果：${
         filteredOrders.length
-      } 筆`
+      } 筆`,
     );
   }
 
@@ -1407,8 +1541,16 @@ function searchOrders() {
 
 // 清除搜尋
 function clearSearch() {
-  document.getElementById("searchInput").value = "";
-  document.getElementById("groupFilter").value = "";
+  const searchInput = document.getElementById("searchInput");
+  const groupFilterEl = document.getElementById("groupFilter");
+
+  // 如果不在搜尋頁面，直接返回
+  if (!searchInput || !groupFilterEl) {
+    return;
+  }
+
+  searchInput.value = "";
+  groupFilterEl.value = "";
   currentPage = 1;
   // 重置 filteredOrders 為全部訂單
   filteredOrders = [...orders];
@@ -1553,14 +1695,14 @@ function processNextOrder() {
 
   // 檢查訂單號碼是否重複
   const existingByOrderNumber = orders.find(
-    (o) => o.orderNumber === order.orderNumber
+    (o) => o.orderNumber === order.orderNumber,
   );
 
   // 檢查客戶是否已存在（根據姓名和電話）
   const existingByCustomer = orders.find(
     (o) =>
       o.customer.name === order.customer.name &&
-      o.customer.phone === order.customer.phone
+      o.customer.phone === order.customer.phone,
   );
 
   if (existingByOrderNumber || existingByCustomer) {
@@ -1686,7 +1828,7 @@ function handleDuplicateOrder(action) {
       (o) =>
         o.orderNumber === newOrder.orderNumber ||
         (o.customer.name === newOrder.customer.name &&
-          o.customer.phone === newOrder.customer.phone)
+          o.customer.phone === newOrder.customer.phone),
     );
     if (existingIndex >= 0) {
       orders[existingIndex] = newOrder;
@@ -1739,7 +1881,7 @@ function confirmCustomOrderNumber() {
   if (exists) {
     showAlert(
       `訂單號碼「${customOrderNumber}」已存在，請使用其他號碼`,
-      "error"
+      "error",
     );
     return;
   }
@@ -1795,8 +1937,10 @@ function exportToExcel() {
   }
 
   // 檢查是否有篩選條件
-  const searchTerm = document.getElementById("searchInput").value;
-  const groupFilter = document.getElementById("groupFilter").value;
+  const searchInput = document.getElementById("searchInput");
+  const groupFilterEl = document.getElementById("groupFilter");
+  const searchTerm = searchInput ? searchInput.value : "";
+  const groupFilter = groupFilterEl ? groupFilterEl.value : "";
   const isFiltered = searchTerm || groupFilter;
 
   // 準備標題列
@@ -1901,8 +2045,10 @@ async function exportToPDF() {
   }
 
   // 檢查是否有篩選條件
-  const searchTerm = document.getElementById("searchInput").value;
-  const groupFilter = document.getElementById("groupFilter").value;
+  const searchInput = document.getElementById("searchInput");
+  const groupFilterEl = document.getElementById("groupFilter");
+  const searchTerm = searchInput ? searchInput.value : "";
+  const groupFilter = groupFilterEl ? groupFilterEl.value : "";
   const isFiltered = searchTerm || groupFilter;
 
   try {
@@ -1918,7 +2064,7 @@ async function exportToPDF() {
     // 計算統計資料
     const grandTotal = sortedOrders.reduce(
       (sum, order) => sum + (order.total || 0),
-      0
+      0,
     );
 
     // 各群組統計
@@ -1959,7 +2105,7 @@ async function exportToPDF() {
       <div style="text-align: center; margin-bottom: 20px;">
         <h1 style="color: #e74c3c; font-size: 24px; margin: 0 0 8px 0;">🧧 ${titleText} 🧧</h1>
         <p style="font-size: 12px; color: #666; margin: 0;">匯出日期：${new Date().toLocaleDateString(
-          "zh-TW"
+          "zh-TW",
         )}</p>
         ${
           isFiltered
@@ -2005,7 +2151,7 @@ async function exportToPDF() {
                 } 筆</td>
                 <td style="padding: 8px; text-align: right; font-size: 12px; color: #27ae60; font-weight: bold;">NT$ ${stats.total.toLocaleString()}</td>
               </tr>
-            `
+            `,
               )
               .join("")}
           </tbody>
@@ -2200,7 +2346,7 @@ async function exportToPDF() {
       0,
       position,
       landscapeWidth,
-      ordersImgHeight
+      ordersImgHeight,
     );
     heightLeft -= landscapeHeight;
 
@@ -2214,7 +2360,7 @@ async function exportToPDF() {
         0,
         position,
         landscapeWidth,
-        ordersImgHeight
+        ordersImgHeight,
       );
       heightLeft -= landscapeHeight;
     }
@@ -2298,7 +2444,7 @@ function deleteDish(dishName) {
   showConfirm(`確定要刪除「${dishName}」嗎？`, () => {
     // 檢查是否有訂單使用此菜品
     const hasOrders = orders.some(
-      (order) => order.dishQuantities && order.dishQuantities[dishName] > 0
+      (order) => order.dishQuantities && order.dishQuantities[dishName] > 0,
     );
 
     if (hasOrders) {
@@ -2323,13 +2469,15 @@ function renderDishesInForm() {
   // 明確選擇訂購表單中的 dishes-table（不是菜品管理區的）
   const form = document.getElementById("orderForm");
   if (!form) {
-    console.error("找不到訂單表單");
+    console.log("目前頁面不包含訂單表單，跳過 renderDishesInForm");
     return;
   }
 
   const container = form.querySelector(".dishes-table");
   if (!container) {
-    console.error("找不到訂單表單中的 .dishes-table 容器");
+    console.log(
+      "目前頁面不包含訂單表單中的 .dishes-table 容器，跳過 renderDishesInForm",
+    );
     return;
   }
 
@@ -2369,7 +2517,7 @@ function renderDishesInForm() {
   console.log(
     "菜品渲染完成，容器內現在有",
     container.children.length,
-    "個元素"
+    "個元素",
   );
 }
 

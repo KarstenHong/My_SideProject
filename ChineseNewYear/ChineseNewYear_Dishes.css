@@ -63,6 +63,11 @@ header p {
   background: linear-gradient(135deg, #fff5e6 0%, #ffe6e6 100%);
 }
 
+/* 管理員專用元素預設隱藏 */
+.admin-only {
+  display: none !important;
+}
+
 .stat-card {
   background: white;
   padding: 25px;

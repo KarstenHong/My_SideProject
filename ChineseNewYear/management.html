@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>洪師傅2026金馬年菜 - 訂單管理系統</title>
+    <link rel="stylesheet" href="ChineseNewYear_Dishes.css" />
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <!-- 匯出功能所需的庫 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+      /* 管理頁面專用樣式 */
+      .nav-bar {
+        background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+        padding: 12px 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .nav-bar a {
+        color: white;
+        text-decoration: none;
+        padding: 10px 25px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        font-weight: bold;
+      }
+
+      .nav-bar a:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+      }
+
+      .nav-bar .current-page {
+        color: white;
+        font-weight: bold;
+        font-size: 1.1em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>🧧 洪師傅2026金馬年菜 🧧</h1>
+        <p>訂單管理與統計系統</p>
+      </header>
+
+      <div class="nav-bar">
+        <div class="current-page">📊 訂單管理</div>
+        <a href="order.html">📝 快速點餐</a>
+      </div>
+
+      <!-- 統計面板 (僅管理員可見) -->
+      <div class="statistics-panel admin-only" style="display: none">
+        <div class="stat-card">
+          <h3>總訂單數</h3>
+          <p class="stat-value" id="totalOrders">0</p>
+        </div>
+        <div class="stat-card">
+          <h3>總金額</h3>
+          <p class="stat-value" id="totalRevenue">NT$ 0</p>
+        </div>
+        <div class="stat-card">
+          <h3>熱門菜品</h3>
+          <p class="stat-value" id="popularDish">-</p>
+        </div>
+      </div>
+
+      <!-- 菜品管理區 (僅管理員可見) -->
+      <div
+        class="form-section dish-management-section admin-only"
+        style="display: none"
+      >
+        <h2>🍽️ 菜品管理</h2>
+        <div class="dish-management-controls">
+          <button
+            type="button"
+            class="btn-primary"
+            onclick="showAddDishModal()"
+          >
+            ➕ 新增菜品
+          </button>
+          <button
+            type="button"
+            class="btn-secondary"
+            onclick="toggleDishList()"
+          >
+            📋 管理現有菜品
+          </button>
+        </div>
+        <div
+          id="dishListContainer"
+          class="dish-list-container"
+          style="display: none"
+        >
+          <div class="dishes-table">
+            <div class="dishes-header">
+              <div>菜品名稱</div>
+              <div>單價</div>
+              <div>操作</div>
+            </div>
+            <div id="manageDishList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 訂單列表 -->
+      <div class="orders-section">
+        <div class="section-header">
+          <h2>訂單管理</h2>
+          <div class="export-buttons">
+            <input
+              type="file"
+              id="importFileInput"
+              accept=".xlsx,.xls"
+              style="display: none"
+              onchange="importFromExcel(event)"
+            />
+            <button
+              class="btn-import"
+              onclick="document.getElementById('importFileInput').click()"
+            >
+              📥 匯入 Excel
+            </button>
+            <button class="btn-export" onclick="exportToExcel()">
+              📊 匯出 Excel
+            </button>
+            <button class="btn-export" onclick="exportToPDF()">
+              📄 匯出 PDF
+            </button>
+          </div>
+        </div>
+        <div class="search-bar">
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="搜尋客戶姓名、電話、群組或訂單號碼..."
+          />
+          <select id="groupFilter">
+            <option value="">所有群組</option>
+          </select>
+          <button onclick="searchOrders()">搜尋</button>
+          <button onclick="clearSearch()">清除</button>
+        </div>
+
+        <!-- 訂單表格 -->
+        <div class="orders-table-container">
+          <table class="orders-table">
+            <thead>
+              <tr>
+                <th>訂單號碼</th>
+                <th>訂購人</th>
+                <th>聯絡電話</th>
+                <th>所屬群組</th>
+                <th>訂購日期</th>
+                <th>總金額</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="ordersTableBody">
+              <!-- 由 JavaScript 動態生成 -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 分頁控制 -->
+        <div class="pagination-container">
+          <div class="pagination-info" id="pageInfo">
+            顯示第 0-0 筆，共 0 筆訂單
+          </div>
+          <div class="pagination-controls">
+            <button
+              class="pagination-btn"
+              onclick="changePage('first')"
+              id="firstPageBtn"
+            >
+              首頁
+            </button>
+            <button
+              class="pagination-btn"
+              onclick="changePage('prev')"
+              id="prevPageBtn"
+            >
+              上一頁
+            </button>
+            <span class="pagination-current" id="currentPage">第 1 / 1 頁</span>
+            <button
+              class="pagination-btn"
+              onclick="changePage('next')"
+              id="nextPageBtn"
+            >
+              下一頁
+            </button>
+            <button
+              class="pagination-btn"
+              onclick="changePage('last')"
+              id="lastPageBtn"
+            >
+              末頁
+            </button>
+          </div>
+          <div class="page-size-selector">
+            每頁顯示
+            <select id="pageSizeSelect" onchange="changePageSize()">
+              <option value="10">10</option>
+              <option value="20" selected>20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            筆
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 訂單詳情Modal -->
+    <div id="orderDetailModal" class="modal">
+      <div class="modal-content modal-large">
+        <span class="close" onclick="closeOrderDetailModal()">&times;</span>
+        <h2>訂單詳情</h2>
+        <div id="orderDetailContainer"></div>
+      </div>
+    </div>
+
+    <!-- 編輯訂單Modal -->
+    <div id="editModal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="closeEditModal()">&times;</span>
+        <h2>編輯訂單</h2>
+        <div id="editFormContainer"></div>
+      </div>
+    </div>
+
+    <!-- 新增菜品Modal -->
+    <div id="addDishModal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="closeAddDishModal()">&times;</span>
+        <h2>新增菜品</h2>
+        <form id="addDishForm" onsubmit="handleAddDish(event)">
+          <div class="form-field">
+            <label for="newDishName">菜品名稱 *</label>
+            <input
+              type="text"
+              id="newDishName"
+              placeholder="請輸入菜品名稱"
+              required
+            />
+          </div>
+          <div class="form-field">
+            <label for="newDishPrice">單價 (NT$) *</label>
+            <input
+              type="number"
+              id="newDishPrice"
+              placeholder="請輸入單價"
+              min="1"
+              required
+            />
+          </div>
+          <div class="form-actions">
+            <button
+              type="button"
+              class="btn-secondary"
+              onclick="closeAddDishModal()"
+            >
+              取消
+            </button>
+            <button type="submit" class="btn-primary">新增</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 重複訂單處理Modal -->
+    <div id="duplicateOrderModal" class="modal">
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <h2>⚠️ 發現重複訂單</h2>
+          <span class="duplicate-info" id="duplicateInfo"></span>
+        </div>
+        <div class="duplicate-comparison">
+          <div class="comparison-column">
+            <h3>📋 現有訂單</h3>
+            <div id="existingOrderDetail" class="order-detail-box"></div>
+          </div>
+          <div class="comparison-divider">
+            <div class="arrow">→</div>
+          </div>
+          <div class="comparison-column">
+            <h3>📥 匯入訂單</h3>
+            <div id="importOrderDetail" class="order-detail-box"></div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn-secondary"
+            onclick="handleDuplicateOrder('skip')"
+          >
+            ❌ 跳過此筆
+          </button>
+          <button
+            type="button"
+            class="btn-warning"
+            onclick="handleDuplicateOrder('update')"
+          >
+            🔄 更新覆蓋
+          </button>
+          <button
+            type="button"
+            class="btn-primary"
+            onclick="showCustomOrderNumberInput()"
+          >
+            ➕ 強制加入（自訂序號）
+          </button>
+        </div>
+        <div
+          id="customOrderNumberSection"
+          class="custom-order-number-section"
+          style="display: none"
+        >
+          <div class="input-group">
+            <label for="customOrderNumber">請輸入新的訂單號碼：</label>
+            <input
+              type="text"
+              id="customOrderNumber"
+              placeholder="例如：001-A 或 #001_副本"
+              class="custom-order-input"
+            />
+          </div>
+          <div class="input-actions">
+            <button
+              type="button"
+              class="btn-secondary-sm"
+              onclick="hideCustomOrderNumberInput()"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              class="btn-success-sm"
+              onclick="confirmCustomOrderNumber()"
+            >
+              確認加入
+            </button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <span id="duplicateProgress"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 自訂提示窗 -->
+    <div id="customAlert" class="custom-alert-overlay">
+      <div class="custom-alert-box">
+        <div class="custom-alert-icon" id="alertIcon"></div>
+        <div class="custom-alert-message" id="alertMessage"></div>
+        <div class="custom-alert-buttons" id="alertButtons"></div>
+      </div>
+    </div>
+
+    <!-- Firebase 配置 -->
+    <script src="firebase-config.js"></script>
+
+    <script src="ChineseNewYear_Dishes.js"></script>
+  </body>
+</html>
