@@ -2093,7 +2093,7 @@ async function exportToPDF() {
     // ==================== 創建第一頁：統計摘要 ====================
     const summaryDiv = document.createElement("div");
     summaryDiv.style.cssText =
-      "width: 210mm; height: 297mm; padding: 15mm 20mm; background: white; font-family: 'Microsoft JhengHei', Arial, sans-serif; box-sizing: border-box; display: flex; flex-direction: column;";
+      "width: 210mm; height: 297mm; padding: 15mm 20mm; background: white; font-family: 'Microsoft JhengHei', Arial, sans-serif; box-sizing: border-box; display: flex; flex-direction: column; position: absolute; left: -9999px; top: 0;";
 
     let titleText = "新年年菜訂單統計報表";
     if (isFiltered) {
@@ -2195,114 +2195,6 @@ async function exportToPDF() {
     summaryDiv.innerHTML = summaryHTML;
     document.body.appendChild(summaryDiv);
 
-    // ==================== 創建後續頁：訂單明細（Excel格式）====================
-    const ordersDiv = document.createElement("div");
-    ordersDiv.style.cssText =
-      "width: 297mm; height: 210mm; padding: 10mm 15mm; background: white; font-family: 'Microsoft JhengHei', Arial, sans-serif; box-sizing: border-box;";
-
-    // 計算欄位數量和寬度
-    const dishCount = DISHES.length;
-    const baseColumns = 5; // 序號、訂單號碼、訂購人、電話、群組
-    const totalColumns = baseColumns + dishCount + 1; // +1 是總金額
-
-    let ordersHTML = `
-      <div style="text-align: center; margin-bottom: 12px;">
-        <h1 style="color: #e74c3c; font-size: 22px; margin: 0 0 5px 0;">訂單明細</h1>
-        <p style="font-size: 11px; color: #666; margin: 0;">共 ${sortedOrders.length} 筆訂單</p>
-      </div>
-      
-      <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
-        <thead>
-          <tr style="background: #e74c3c; color: white;">
-            <th style="padding: 8px 4px; text-align: center; border: 1px solid #c0392b; font-size: 11px;">序號</th>
-            <th style="padding: 8px 5px; text-align: left; border: 1px solid #c0392b; font-size: 11px;">訂單號碼</th>
-            <th style="padding: 8px 5px; text-align: left; border: 1px solid #c0392b; font-size: 11px;">訂購人</th>
-            <th style="padding: 8px 5px; text-align: left; border: 1px solid #c0392b; font-size: 11px;">電話</th>
-            <th style="padding: 8px 5px; text-align: left; border: 1px solid #c0392b; font-size: 11px;">群組</th>
-    `;
-
-    // 動態生成菜品欄位標題
-    DISHES.forEach((dish) => {
-      ordersHTML += `<th style="padding: 8px 4px; text-align: center; border: 1px solid #c0392b; font-size: 10px;">${dish.name}</th>`;
-    });
-
-    ordersHTML += `
-            <th style="padding: 8px 5px; text-align: right; border: 1px solid #c0392b; font-size: 11px;">總金額</th>
-          </tr>
-        </thead>
-        <tbody>
-    `;
-
-    // 生成訂單資料列
-    sortedOrders.forEach((order, index) => {
-      if (!order.dishQuantities) return;
-
-      const rowStyle =
-        index % 2 === 0 ? "background: #f9f9f9;" : "background: white;";
-
-      ordersHTML += `
-        <tr style="${rowStyle}">
-          <td style="padding: 6px 4px; text-align: center; border: 1px solid #ddd; font-size: 10px;">${
-            index + 1
-          }</td>
-          <td style="padding: 6px 5px; border: 1px solid #ddd; font-size: 10px;">${
-            order.orderNumber || order.id
-          }</td>
-          <td style="padding: 6px 5px; border: 1px solid #ddd; font-size: 10px;">${
-            order.customer.name
-          }</td>
-          <td style="padding: 6px 5px; border: 1px solid #ddd; font-size: 9px;">${
-            order.customer.phone
-          }</td>
-          <td style="padding: 6px 5px; border: 1px solid #ddd; font-size: 9px;">${
-            order.customer.group || "未分組"
-          }</td>
-      `;
-
-      // 填入各菜品的訂購數量
-      DISHES.forEach((dish) => {
-        const qty = order.dishQuantities[dish.name] || 0;
-        const cellStyle =
-          qty > 0 ? "font-weight: bold; color: #e74c3c;" : "color: #999;";
-        ordersHTML += `<td style="padding: 6px 4px; text-align: center; border: 1px solid #ddd; font-size: 11px; ${cellStyle}">${
-          qty > 0 ? qty : "-"
-        }</td>`;
-      });
-
-      ordersHTML += `
-          <td style="padding: 6px 5px; text-align: right; border: 1px solid #ddd; font-weight: bold; color: #27ae60; font-size: 10px;">NT$ ${order.total.toLocaleString()}</td>
-        </tr>
-      `;
-    });
-
-    // 統計列
-    ordersHTML += `
-        <tr style="background: #fff3cd; font-weight: bold;">
-          <td colspan="2" style="padding: 8px 5px; text-align: center; border: 1px solid #ddd; color: #e74c3c; font-size: 11px;">【統計】</td>
-          <td colspan="3" style="padding: 8px 5px; border: 1px solid #ddd;"></td>
-    `;
-
-    // 計算各菜品總數量
-    DISHES.forEach((dish) => {
-      const totalQty = sortedOrders.reduce((sum, order) => {
-        if (!order.dishQuantities) return sum;
-        return sum + (order.dishQuantities[dish.name] || 0);
-      }, 0);
-      ordersHTML += `<td style="padding: 8px 4px; text-align: center; border: 1px solid #ddd; color: #e74c3c; font-size: 11px;">${
-        totalQty > 0 ? totalQty : "-"
-      }</td>`;
-    });
-
-    ordersHTML += `
-          <td style="padding: 8px 5px; text-align: right; border: 1px solid #ddd; color: #27ae60; font-size: 11px;">NT$ ${grandTotal.toLocaleString()}</td>
-        </tr>
-        </tbody>
-      </table>
-    `;
-
-    ordersDiv.innerHTML = ordersHTML;
-    document.body.appendChild(ordersDiv);
-
     // ==================== 轉換為 PDF ====================
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF("p", "mm", "a4"); // 第一頁直向（統計摘要）
@@ -2320,49 +2212,138 @@ async function exportToPDF() {
     const imgHeight = (summaryCanvas.height * imgWidth) / summaryCanvas.width;
     pdf.addImage(summaryImgData, "PNG", 0, 0, imgWidth, imgHeight);
 
-    // 後續頁：訂單明細（橫向）
-    const ordersCanvas = await html2canvas(ordersDiv, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      backgroundColor: "#ffffff",
-    });
+    // 清理統計摘要的臨時元素
+    document.body.removeChild(summaryDiv);
 
-    const ordersImgData = ordersCanvas.toDataURL("image/png");
+    // ==================== 分批渲染訂單明細頁（橫向）====================
+    // 每頁顯示的訂單數量（根據 A4 橫向頁面大小調整）
+    const ORDERS_PER_PAGE = 25;
+    const totalPages = Math.ceil(sortedOrders.length / ORDERS_PER_PAGE);
 
-    // 新增橫向頁面
-    pdf.addPage("a4", "landscape");
-    const landscapeWidth = 297; // A4 橫向寬度
-    const landscapeHeight = 210; // A4 橫向高度
-    const ordersImgHeight =
-      (ordersCanvas.height * landscapeWidth) / ordersCanvas.width;
-
-    let heightLeft = ordersImgHeight;
-    let position = 0;
-
-    pdf.addImage(
-      ordersImgData,
-      "PNG",
-      0,
-      position,
-      landscapeWidth,
-      ordersImgHeight,
-    );
-    heightLeft -= landscapeHeight;
-
-    // 如果需要更多頁面
-    while (heightLeft > 0) {
-      position = heightLeft - ordersImgHeight;
+    for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
+      // 新增橫向頁面
       pdf.addPage("a4", "landscape");
-      pdf.addImage(
-        ordersImgData,
-        "PNG",
-        0,
-        position,
-        landscapeWidth,
-        ordersImgHeight,
+
+      // 計算此頁的訂單範圍
+      const startIndex = pageIndex * ORDERS_PER_PAGE;
+      const endIndex = Math.min(
+        startIndex + ORDERS_PER_PAGE,
+        sortedOrders.length,
       );
-      heightLeft -= landscapeHeight;
+      const pageOrders = sortedOrders.slice(startIndex, endIndex);
+      const isLastPage = pageIndex === totalPages - 1;
+
+      // 創建此頁的 HTML
+      const pageDiv = document.createElement("div");
+      pageDiv.style.cssText =
+        "width: 297mm; height: 210mm; padding: 8mm 10mm; background: white; font-family: 'Microsoft JhengHei', Arial, sans-serif; box-sizing: border-box; position: absolute; left: -9999px; top: 0;";
+
+      let pageHTML = `
+        <div style="text-align: center; margin-bottom: 8px;">
+          <h1 style="color: #e74c3c; font-size: 18px; margin: 0 0 3px 0;">訂單明細</h1>
+          <p style="font-size: 10px; color: #666; margin: 0;">共 ${sortedOrders.length} 筆訂單 ｜ 第 ${pageIndex + 1} / ${totalPages} 頁</p>
+        </div>
+        
+        <table style="width: 100%; border-collapse: collapse; font-size: 9px;">
+          <thead>
+            <tr style="background: #e74c3c; color: white;">
+              <th style="padding: 5px 3px; text-align: center; border: 1px solid #c0392b; font-size: 9px; white-space: nowrap;">序號</th>
+              <th style="padding: 5px 3px; text-align: left; border: 1px solid #c0392b; font-size: 9px; white-space: nowrap;">訂單號碼</th>
+              <th style="padding: 5px 3px; text-align: left; border: 1px solid #c0392b; font-size: 9px; white-space: nowrap;">訂購人</th>
+              <th style="padding: 5px 3px; text-align: left; border: 1px solid #c0392b; font-size: 9px; white-space: nowrap;">電話</th>
+              <th style="padding: 5px 3px; text-align: left; border: 1px solid #c0392b; font-size: 9px; white-space: nowrap;">群組</th>
+      `;
+
+      // 動態生成菜品欄位標題
+      DISHES.forEach((dish) => {
+        pageHTML += `<th style="padding: 5px 2px; text-align: center; border: 1px solid #c0392b; font-size: 8px; white-space: nowrap;">${dish.name}</th>`;
+      });
+
+      pageHTML += `
+              <th style="padding: 5px 3px; text-align: right; border: 1px solid #c0392b; font-size: 9px; white-space: nowrap;">總金額</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      // 生成此頁的訂單資料列
+      pageOrders.forEach((order, index) => {
+        const globalIndex = startIndex + index;
+        const rowStyle =
+          index % 2 === 0 ? "background: #f9f9f9;" : "background: white;";
+
+        pageHTML += `
+          <tr style="${rowStyle}">
+            <td style="padding: 4px 3px; text-align: center; border: 1px solid #ddd; font-size: 9px;">${globalIndex + 1}</td>
+            <td style="padding: 4px 3px; border: 1px solid #ddd; font-size: 9px;">${order.orderNumber || order.id}</td>
+            <td style="padding: 4px 3px; border: 1px solid #ddd; font-size: 9px;">${order.customer.name}</td>
+            <td style="padding: 4px 3px; border: 1px solid #ddd; font-size: 8px;">${order.customer.phone}</td>
+            <td style="padding: 4px 3px; border: 1px solid #ddd; font-size: 8px;">${order.customer.group || "未分組"}</td>
+        `;
+
+        // 填入各菜品的訂購數量
+        DISHES.forEach((dish) => {
+          const qty = order.dishQuantities
+            ? order.dishQuantities[dish.name] || 0
+            : 0;
+          const cellStyle =
+            qty > 0 ? "font-weight: bold; color: #e74c3c;" : "color: #999;";
+          pageHTML += `<td style="padding: 4px 2px; text-align: center; border: 1px solid #ddd; font-size: 9px; ${cellStyle}">${qty > 0 ? qty : "-"}</td>`;
+        });
+
+        pageHTML += `
+            <td style="padding: 4px 3px; text-align: right; border: 1px solid #ddd; font-weight: bold; color: #27ae60; font-size: 9px;">NT$ ${(order.total || 0).toLocaleString()}</td>
+          </tr>
+        `;
+      });
+
+      // 如果是最後一頁，添加統計列
+      if (isLastPage) {
+        pageHTML += `
+          <tr style="background: #fff3cd; font-weight: bold;">
+            <td colspan="2" style="padding: 5px 3px; text-align: center; border: 1px solid #ddd; color: #e74c3c; font-size: 9px;">【統計】</td>
+            <td colspan="3" style="padding: 5px 3px; border: 1px solid #ddd;"></td>
+        `;
+
+        // 計算各菜品總數量
+        DISHES.forEach((dish) => {
+          const totalQty = sortedOrders.reduce((sum, order) => {
+            if (!order.dishQuantities) return sum;
+            return sum + (order.dishQuantities[dish.name] || 0);
+          }, 0);
+          pageHTML += `<td style="padding: 5px 2px; text-align: center; border: 1px solid #ddd; color: #e74c3c; font-size: 9px;">${totalQty > 0 ? totalQty : "-"}</td>`;
+        });
+
+        pageHTML += `
+            <td style="padding: 5px 3px; text-align: right; border: 1px solid #ddd; color: #27ae60; font-size: 9px;">NT$ ${grandTotal.toLocaleString()}</td>
+          </tr>
+        `;
+      }
+
+      pageHTML += `
+          </tbody>
+        </table>
+      `;
+
+      pageDiv.innerHTML = pageHTML;
+      document.body.appendChild(pageDiv);
+
+      // 渲染此頁為圖片
+      const pageCanvas = await html2canvas(pageDiv, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+      });
+
+      const pageImgData = pageCanvas.toDataURL("image/png");
+      const landscapeWidth = 297;
+      const landscapeHeight = 210;
+
+      pdf.addImage(pageImgData, "PNG", 0, 0, landscapeWidth, landscapeHeight);
+
+      // 清理臨時元素
+      document.body.removeChild(pageDiv);
     }
 
     // 下載 PDF
@@ -2379,10 +2360,6 @@ async function exportToPDF() {
       : `已匯出全部 ${sortedOrders.length} 筆訂單的 PDF！`;
 
     showAlert(message, "success");
-
-    // 清理臨時元素
-    document.body.removeChild(summaryDiv);
-    document.body.removeChild(ordersDiv);
   } catch (error) {
     console.error("PDF 匯出失敗:", error);
     showAlert(`PDF 匯出失敗：${error.message}`, "error");
