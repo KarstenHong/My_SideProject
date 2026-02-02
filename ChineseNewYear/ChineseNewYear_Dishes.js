@@ -13,6 +13,7 @@ window.toggleAdminMode = function (password) {
 
     if (inputPassword === correctPassword) {
       isAdminMode = true;
+      document.body.classList.add("admin-mode-active"); // 加入 body class 用於列印控制
       console.log(
         "%c🔓 管理員模式已啟用 ✓",
         "color: #27ae60; font-size: 16px; font-weight: bold;",
@@ -36,6 +37,14 @@ window.toggleAdminMode = function (password) {
         dishManagement.style.setProperty("display", "block", "important");
       }
 
+      // 顯示匯出匯入按鈕
+      const exportButtons = document.querySelector(
+        ".export-buttons.admin-only",
+      );
+      if (exportButtons) {
+        exportButtons.style.setProperty("display", "flex", "important");
+      }
+
       // 重新載入訂單以顯示編輯/刪除按鈕
       loadOrders();
 
@@ -49,6 +58,7 @@ window.toggleAdminMode = function (password) {
   } else {
     // 關閉管理員模式
     isAdminMode = false;
+    document.body.classList.remove("admin-mode-active"); // 移除 body class
     console.log(
       "%c🔒 管理員模式已關閉",
       "color: #e74c3c; font-size: 16px; font-weight: bold;",
@@ -68,6 +78,12 @@ window.toggleAdminMode = function (password) {
       dishManagement.style.setProperty("display", "none", "important");
     }
 
+    // 隱藏匯出匯入按鈕
+    const exportButtons = document.querySelector(".export-buttons.admin-only");
+    if (exportButtons) {
+      exportButtons.style.setProperty("display", "none", "important");
+    }
+
     // 重新載入訂單以隱藏編輯/刪除按鈕
     loadOrders();
 
@@ -83,6 +99,42 @@ document.addEventListener("keydown", function (e) {
     toggleAdminMode();
   }
 });
+
+// ==================== 防止列印功能（非管理員模式）====================
+
+// 攔截 Ctrl+P 列印快捷鍵
+document.addEventListener("keydown", function (e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === "p") {
+    if (!isAdminMode) {
+      e.preventDefault();
+      showAlert("僅管理員可使用列印功能\n請先進入管理員模式", "warning");
+      return false;
+    }
+  }
+});
+
+// 攔截右鍵選單（防止透過右鍵列印）
+document.addEventListener("contextmenu", function (e) {
+  if (!isAdminMode) {
+    // 允許在輸入欄位使用右鍵
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") {
+      return true;
+    }
+    e.preventDefault();
+    showAlert("僅管理員可使用此功能", "warning");
+    return false;
+  }
+});
+
+// 攔截 window.print（防止透過 JavaScript 列印）
+const originalPrint = window.print;
+window.print = function () {
+  if (!isAdminMode) {
+    showAlert("僅管理員可使用列印功能\n請先進入管理員模式", "warning");
+    return;
+  }
+  originalPrint.call(window);
+};
 
 // ==================== 個資隱碼處理 ====================
 
@@ -490,10 +542,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     "%c啟用管理員模式：toggleAdminMode() 或按 Ctrl+Shift+A",
     "color: #3498db; font-size: 14px;",
   );
-  console.log(
-    "%c顯示菜品管理：toggleDishManagement()",
-    "color: #3498db; font-size: 14px;",
-  );
 
   // Firebase 即時同步
   if (isFirebaseEnabled) {
@@ -806,6 +854,7 @@ async function handleFormSubmit(e) {
     customer: customerData,
     dishQuantities: dishQuantities,
     total: total,
+    paymentStatus: "unpaid", // 預設為未付款
     createdAt: new Date().toISOString(),
   };
 
@@ -952,9 +1001,29 @@ function loadOrders() {
           `
         : "";
 
+      // 付款狀態顯示
+      const paymentStatus = order.paymentStatus || "unpaid";
+      const paymentStatusText =
+        paymentStatus === "paid" ? "✅ 已付款" : "❌ 未付款";
+      const paymentStatusClass =
+        paymentStatus === "paid" ? "status-paid" : "status-unpaid";
+
+      // 只有管理員模式才能點擊切換付款狀態
+      const paymentClickable = isAdminMode
+        ? `onclick="togglePaymentStatus(${order.id})" title="點擊切換付款狀態" style="cursor: pointer;"`
+        : 'title="僅管理員可修改付款狀態"';
+      const adminClickableClass = isAdminMode ? "clickable" : "";
+
+      // 檢查是否有備註（客製訂單）
+      const hasNote = order.customer.note && order.customer.note.trim() !== "";
+      const noteIndicator = hasNote
+        ? '<span class="note-indicator" title="此訂單有備註（客製）">📝</span>'
+        : "";
+      const rowClass = hasNote ? "has-note" : "";
+
       return `
-        <tr>
-          <td class="order-number" data-label="訂單號碼">${orderNumber}</td>
+        <tr class="${rowClass}">
+          <td class="order-number" data-label="訂單號碼">${orderNumber} ${noteIndicator}</td>
           <td data-label="訂購人">${displayName}</td>
           <td data-label="聯絡電話">${displayPhone}</td>
           <td data-label="所屬群組">${displayGroup}</td>
@@ -962,6 +1031,11 @@ function loadOrders() {
             order.createdAt,
           )}</td>
           <td class="order-total" data-label="總金額">NT$ ${order.total.toLocaleString()}</td>
+          <td class="payment-status ${paymentStatusClass}" data-label="付款狀態">
+            <span class="status-badge ${paymentStatusClass} ${adminClickableClass}" ${paymentClickable}>
+              ${paymentStatusText}
+            </span>
+          </td>
           <td class="order-actions" data-label="操作">
             <button class="btn-detail" onclick="showOrderDetail(${
               order.id
@@ -1070,6 +1144,13 @@ function showOrderDetail(orderId) {
     ? maskGroup(order.customer.group)
     : order.customer.group || "未分組";
 
+  // 付款狀態
+  const paymentStatus = order.paymentStatus || "unpaid";
+  const paymentStatusText =
+    paymentStatus === "paid" ? "✅ 已付款" : "❌ 未付款";
+  const paymentStatusClass =
+    paymentStatus === "paid" ? "status-paid" : "status-unpaid";
+
   // 計算訂購的菜品
   const orderedDishes = DISHES.filter(
     (dish) => order.dishQuantities[dish.name] > 0,
@@ -1098,6 +1179,10 @@ function showOrderDetail(orderId) {
           <div class="info-item">
             <span class="info-label">日期：</span>
             <span class="info-value">${formatDate(order.createdAt)}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">付款狀態：</span>
+            <span class="info-value status-badge ${paymentStatusClass}">${paymentStatusText}</span>
           </div>
         </div>
         ${
@@ -1264,6 +1349,13 @@ function editOrder(orderId) {
                               .join("")}
                         </select>
                     </div>
+                    <div class="form-field">
+                        <label for="editPaymentStatus">付款狀態</label>
+                        <select id="editPaymentStatus">
+                            <option value="unpaid" ${(order.paymentStatus || "unpaid") === "unpaid" ? "selected" : ""}>❌ 未付款</option>
+                            <option value="paid" ${order.paymentStatus === "paid" ? "selected" : ""}>✅ 已付款</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="form-field">
                     <label for="editCustomerNote">備註</label>
@@ -1406,11 +1498,15 @@ async function handleEditSubmit(e, orderId) {
     total += dish.price * qty;
   });
 
+  // 取得付款狀態
+  const paymentStatus = document.getElementById("editPaymentStatus").value;
+
   const updatedOrderData = {
     orderNumber: editOrderNumber,
     customer: customerData,
     dishQuantities: dishQuantities,
     total: total,
+    paymentStatus: paymentStatus,
   };
 
   try {
@@ -1443,6 +1539,50 @@ async function handleEditSubmit(e, orderId) {
 // 關閉編輯Modal
 function closeEditModal() {
   document.getElementById("editModal").style.display = "none";
+}
+
+// 快速切換付款狀態（僅管理員可用）
+async function togglePaymentStatus(orderId) {
+  // 檢查管理員權限
+  if (!isAdminMode) {
+    showAlert("僅管理員可修改付款狀態", "warning");
+    return;
+  }
+
+  const order = orders.find((o) => o.id === orderId);
+  if (!order) {
+    showAlert("找不到訂單", "error");
+    return;
+  }
+
+  const currentStatus = order.paymentStatus || "unpaid";
+  const newStatus = currentStatus === "paid" ? "unpaid" : "paid";
+  const statusText = newStatus === "paid" ? "已付款" : "未付款";
+
+  try {
+    if (isFirebaseEnabled && order.firebaseId) {
+      // Firebase 模式
+      await updateOrderInFirebase(order.firebaseId, {
+        paymentStatus: newStatus,
+      });
+      console.log(`✅ 付款狀態已更新為：${statusText}`);
+    } else {
+      // 本地模式
+      const orderIndex = orders.findIndex((o) => o.id === orderId);
+      if (orderIndex !== -1) {
+        orders[orderIndex].paymentStatus = newStatus;
+        saveOrders();
+        filteredOrders = [...orders];
+        loadOrders();
+      }
+    }
+
+    // 顯示簡短提示（不用確認按鈕）
+    showAlert(`付款狀態已更新為：${statusText}`, "success");
+  } catch (error) {
+    console.error("更新付款狀態失敗:", error);
+    showAlert("更新付款狀態失敗", "error");
+  }
 }
 
 // 刪除訂單
@@ -1562,6 +1702,13 @@ function clearSearch() {
 
 // 匯入 Excel
 function importFromExcel(event) {
+  // 檢查管理員權限
+  if (!isAdminMode) {
+    showAlert("僅管理員可使用匯入功能", "warning");
+    event.target.value = ""; // 清空檔案選擇
+    return;
+  }
+
   const file = event.target.files[0];
   if (!file) return;
 
@@ -1928,6 +2075,12 @@ function finishImport() {
 
 // 匯出 Excel - 橫向格式，菜品在標題列（依據搜尋結果匯出）
 function exportToExcel() {
+  // 檢查管理員權限
+  if (!isAdminMode) {
+    showAlert("僅管理員可使用匯出功能", "warning");
+    return;
+  }
+
   // 使用 filteredOrders（搜尋/篩選後的結果），如果沒有篩選則使用全部訂單
   const ordersToExport = filteredOrders.length > 0 ? filteredOrders : orders;
 
@@ -1943,10 +2096,31 @@ function exportToExcel() {
   const groupFilter = groupFilterEl ? groupFilterEl.value : "";
   const isFiltered = searchTerm || groupFilter;
 
+  // 菜品縮寫對照表
+  const dishShortNames = {
+    甘蔗香燻雞: "燻雞",
+    糖醋海鱸魚: "鱸魚",
+    洪家筍乾Q蹄膀: "蹄膀",
+    洪家筍干Q蹄膀: "蹄膀",
+    皇品魚翅蝦仁羹: "魚翅羹",
+    櫻花蝦米糕: "米糕",
+    "御品干貝佛跳牆(不含甕)": "佛跳牆",
+    "蜜汁全排骨(五支)": "排骨",
+    "白雪旗魚丸(一斤)": "旗魚丸",
+    極鮮旗魚卷: "旗魚卷",
+  };
+
   // 準備標題列
-  const headers = ["訂單號碼", "訂購人", "聯絡電話", "所屬群組", "備註"];
+  const headers = [
+    "訂單號碼",
+    "訂購人",
+    "聯絡電話",
+    "所屬群組",
+    "付款狀態",
+    "備註",
+  ];
   DISHES.forEach((dish) => {
-    headers.push(dish.name);
+    headers.push(dishShortNames[dish.name] || dish.name);
   });
   headers.push("訂購總金額");
 
@@ -1955,16 +2129,26 @@ function exportToExcel() {
 
   ordersToExport.forEach((order) => {
     if (!order.dishQuantities) return;
+    const paymentStatusText =
+      order.paymentStatus === "paid" ? "已付款" : "未付款";
+    const hasNote = order.customer.note && order.customer.note.trim() !== "";
+    const noteText = hasNote ? `【客製】${order.customer.note}` : "-";
+    const orderNumberDisplay = hasNote
+      ? `${order.orderNumber || order.id} 📝`
+      : order.orderNumber || order.id;
+
     const row = {
-      訂單號碼: order.orderNumber || order.id,
+      訂單號碼: orderNumberDisplay,
       訂購人: order.customer.name,
       聯絡電話: order.customer.phone,
       所屬群組: order.customer.group || "未分組",
-      備註: order.customer.note || "-",
+      付款狀態: paymentStatusText,
+      備註: noteText,
     };
 
     DISHES.forEach((dish) => {
-      row[dish.name] = order.dishQuantities[dish.name] || 0;
+      const shortName = dishShortNames[dish.name] || dish.name;
+      row[shortName] = order.dishQuantities[dish.name] || 0;
     });
 
     row["訂購總金額"] = order.total;
@@ -1978,6 +2162,7 @@ function exportToExcel() {
     訂購人: "【統計】",
     聯絡電話: "",
     所屬群組: "",
+    付款狀態: "",
     備註: "",
   };
 
@@ -1987,7 +2172,8 @@ function exportToExcel() {
       if (!order.dishQuantities) return sum;
       return sum + (order.dishQuantities[dish.name] || 0);
     }, 0);
-    statsRow[dish.name] = totalQty;
+    const shortName = dishShortNames[dish.name] || dish.name;
+    statsRow[shortName] = totalQty;
   });
 
   // 計算所有訂單的總金額（基於匯出的訂單）
@@ -2006,13 +2192,14 @@ function exportToExcel() {
 
   // 設定欄位寬度
   const colWidths = [
-    { wch: 15 }, // 訂單號碼
-    { wch: 12 }, // 訂購人
+    { wch: 12 }, // 訂單號碼
+    { wch: 10 }, // 訂購人
     { wch: 12 }, // 聯絡電話
-    { wch: 12 }, // 所屬群組
-    { wch: 20 }, // 備註
+    { wch: 10 }, // 所屬群組
+    { wch: 8 }, // 付款狀態
+    { wch: 15 }, // 備註
   ];
-  DISHES.forEach(() => colWidths.push({ wch: 10 })); // 各菜品
+  DISHES.forEach(() => colWidths.push({ wch: 8 })); // 各菜品
   colWidths.push({ wch: 12 }); // 訂購總金額
   ws["!cols"] = colWidths;
 
@@ -2036,6 +2223,12 @@ function exportToExcel() {
 
 // 匯出 PDF - 使用 html2canvas 支援中文（依據搜尋結果匯出）
 async function exportToPDF() {
+  // 檢查管理員權限
+  if (!isAdminMode) {
+    showAlert("僅管理員可使用匯出功能", "warning");
+    return;
+  }
+
   // 使用 filteredOrders（搜尋/篩選後的結果），如果沒有篩選則使用全部訂單
   const ordersToExport = filteredOrders.length > 0 ? filteredOrders : orders;
 
@@ -2043,6 +2236,20 @@ async function exportToPDF() {
     showAlert("目前沒有訂單可以匯出", "warning");
     return;
   }
+
+  // 菜品縮寫對照表
+  const dishShortNames = {
+    甘蔗香燻雞: "燻雞",
+    糖醋海鱸魚: "鱸魚",
+    洪家筍乾Q蹄膀: "蹄膀",
+    洪家筍干Q蹄膀: "蹄膀",
+    皇品魚翅蝦仁羹: "魚翅羹",
+    櫻花蝦米糕: "米糕",
+    "御品干貝佛跳牆(不含甕)": "佛跳牆",
+    "蜜汁全排骨(五支)": "排骨",
+    "白雪旗魚丸(一斤)": "旗魚丸",
+    極鮮旗魚卷: "旗魚卷",
+  };
 
   // 檢查是否有篩選條件
   const searchInput = document.getElementById("searchInput");
@@ -2086,9 +2293,16 @@ async function exportToPDF() {
         return sum + (order.dishQuantities[dish.name] || 0);
       }, 0);
       if (totalQty > 0) {
-        dishStats[dish.name] = { qty: totalQty, price: dish.price };
+        const shortName = dishShortNames[dish.name] || dish.name;
+        dishStats[shortName] = { qty: totalQty, price: dish.price };
       }
     });
+
+    // 付款統計
+    const paidCount = sortedOrders.filter(
+      (o) => o.paymentStatus === "paid",
+    ).length;
+    const unpaidCount = sortedOrders.length - paidCount;
 
     // ==================== 創建第一頁：統計摘要 ====================
     const summaryDiv = document.createElement("div");
@@ -2102,42 +2316,49 @@ async function exportToPDF() {
     }
 
     let summaryHTML = `
-      <div style="text-align: center; margin-bottom: 20px;">
-        <h1 style="color: #e74c3c; font-size: 24px; margin: 0 0 8px 0;">🧧 ${titleText} 🧧</h1>
-        <p style="font-size: 12px; color: #666; margin: 0;">匯出日期：${new Date().toLocaleDateString(
+      <div style="text-align: center; margin-bottom: 25px;">
+        <h1 style="color: #e74c3c; font-size: 28px; margin: 0 0 10px 0;">🧧 ${titleText} 🧧</h1>
+        <p style="font-size: 14px; color: #666; margin: 0;">匯出日期：${new Date().toLocaleDateString(
           "zh-TW",
         )}</p>
         ${
           isFiltered
-            ? `<p style="font-size: 11px; color: #e74c3c; margin: 5px 0 0 0;">📊 本報表為篩選結果</p>`
+            ? `<p style="font-size: 13px; color: #e74c3c; margin: 8px 0 0 0;">📊 本報表為篩選結果</p>`
             : ""
         }
       </div>
       
-      <div style="margin-bottom: 18px;">
-        <h2 style="color: #e74c3c; font-size: 16px; margin: 0 0 12px 0; border-bottom: 2px solid #e74c3c; padding-bottom: 6px;">【基本統計】</h2>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-          <div style="background: #fff3e6; padding: 15px; border-radius: 8px; text-align: center;">
-            <div style="font-size: 12px; color: #666; margin-bottom: 6px;">總訂單數</div>
-            <div style="font-size: 28px; font-weight: bold; color: #e74c3c;">${
+      <div style="margin-bottom: 22px;">
+        <h2 style="color: #e74c3c; font-size: 18px; margin: 0 0 15px 0; border-bottom: 2px solid #e74c3c; padding-bottom: 8px;">【基本統計】</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+          <div style="background: #fff3e6; padding: 18px; border-radius: 10px; text-align: center;">
+            <div style="font-size: 14px; color: #666; margin-bottom: 8px;">總訂單數</div>
+            <div style="font-size: 32px; font-weight: bold; color: #e74c3c;">${
               sortedOrders.length
             } 筆</div>
           </div>
-          <div style="background: #e8f8f5; padding: 15px; border-radius: 8px; text-align: center;">
-            <div style="font-size: 12px; color: #666; margin-bottom: 6px;">總金額</div>
-            <div style="font-size: 28px; font-weight: bold; color: #27ae60;">NT$ ${grandTotal.toLocaleString()}</div>
+          <div style="background: #e8f8f5; padding: 18px; border-radius: 10px; text-align: center;">
+            <div style="font-size: 14px; color: #666; margin-bottom: 8px;">總金額</div>
+            <div style="font-size: 32px; font-weight: bold; color: #27ae60;">NT$ ${grandTotal.toLocaleString()}</div>
+          </div>
+          <div style="background: #f0f0f0; padding: 18px; border-radius: 10px; text-align: center;">
+            <div style="font-size: 14px; color: #666; margin-bottom: 8px;">付款狀態</div>
+            <div style="font-size: 16px; font-weight: bold;">
+              <span style="color: #27ae60;">✓已付 ${paidCount}</span> / 
+              <span style="color: #e74c3c;">✗未付 ${unpaidCount}</span>
+            </div>
           </div>
         </div>
       </div>
       
-      <div style="margin-bottom: 18px;">
-        <h2 style="color: #e74c3c; font-size: 16px; margin: 0 0 12px 0; border-bottom: 2px solid #e74c3c; padding-bottom: 6px;">【各群組訂購統計】</h2>
+      <div style="margin-bottom: 22px;">
+        <h2 style="color: #e74c3c; font-size: 18px; margin: 0 0 15px 0; border-bottom: 2px solid #e74c3c; padding-bottom: 8px;">【各群組訂購統計】</h2>
         <table style="width: 100%; border-collapse: collapse;">
           <thead>
             <tr style="background: #e74c3c; color: white;">
-              <th style="padding: 10px; text-align: left; font-size: 13px;">群組名稱</th>
-              <th style="padding: 10px; text-align: center; font-size: 13px;">訂單數量</th>
-              <th style="padding: 10px; text-align: right; font-size: 13px;">金額小計</th>
+              <th style="padding: 12px; text-align: left; font-size: 15px;">群組名稱</th>
+              <th style="padding: 12px; text-align: center; font-size: 15px;">訂單數量</th>
+              <th style="padding: 12px; text-align: right; font-size: 15px;">金額小計</th>
             </tr>
           </thead>
           <tbody>
@@ -2145,11 +2366,11 @@ async function exportToPDF() {
               .map(
                 ([group, stats]) => `
               <tr style="border-bottom: 1px solid #ddd;">
-                <td style="padding: 8px; font-size: 12px;">${group}</td>
-                <td style="padding: 8px; text-align: center; font-size: 12px;">${
+                <td style="padding: 10px; font-size: 14px;">${group}</td>
+                <td style="padding: 10px; text-align: center; font-size: 14px;">${
                   stats.count
                 } 筆</td>
-                <td style="padding: 8px; text-align: right; font-size: 12px; color: #27ae60; font-weight: bold;">NT$ ${stats.total.toLocaleString()}</td>
+                <td style="padding: 10px; text-align: right; font-size: 14px; color: #27ae60; font-weight: bold;">NT$ ${stats.total.toLocaleString()}</td>
               </tr>
             `,
               )
@@ -2159,15 +2380,15 @@ async function exportToPDF() {
       </div>
       
       <div style="flex: 1; overflow: hidden;">
-        <h2 style="color: #e74c3c; font-size: 16px; margin: 0 0 12px 0; border-bottom: 2px solid #e74c3c; padding-bottom: 6px;">【各菜品訂購統計】</h2>
+        <h2 style="color: #e74c3c; font-size: 18px; margin: 0 0 15px 0; border-bottom: 2px solid #e74c3c; padding-bottom: 8px;">【各菜品訂購統計】</h2>
         <div style="max-height: 100%; overflow: hidden;">
           <table style="width: 100%; border-collapse: collapse;">
             <thead>
               <tr style="background: #e74c3c; color: white;">
-                <th style="padding: 10px; text-align: left; font-size: 13px;">菜品名稱</th>
-                <th style="padding: 10px; text-align: center; font-size: 13px;">訂購數量</th>
-                <th style="padding: 10px; text-align: right; font-size: 13px;">單價</th>
-                <th style="padding: 10px; text-align: right; font-size: 13px;">小計金額</th>
+                <th style="padding: 12px; text-align: left; font-size: 15px;">菜品名稱</th>
+                <th style="padding: 12px; text-align: center; font-size: 15px;">訂購數量</th>
+                <th style="padding: 12px; text-align: right; font-size: 15px;">單價</th>
+                <th style="padding: 12px; text-align: right; font-size: 15px;">小計金額</th>
               </tr>
             </thead>
             <tbody>
@@ -2176,12 +2397,12 @@ async function exportToPDF() {
                   const subtotal = data.qty * data.price;
                   return `
                   <tr style="border-bottom: 1px solid #ddd;">
-                    <td style="padding: 8px; font-size: 12px;">${dish}</td>
-                    <td style="padding: 8px; text-align: center; font-size: 12px; font-weight: bold;">${
+                    <td style="padding: 10px; font-size: 14px;">${dish}</td>
+                    <td style="padding: 10px; text-align: center; font-size: 14px; font-weight: bold;">${
                       data.qty
                     } 份</td>
-                    <td style="padding: 8px; text-align: right; font-size: 12px;">NT$ ${data.price.toLocaleString()}</td>
-                    <td style="padding: 8px; text-align: right; font-size: 12px; color: #27ae60; font-weight: bold;">NT$ ${subtotal.toLocaleString()}</td>
+                    <td style="padding: 10px; text-align: right; font-size: 14px;">NT$ ${data.price.toLocaleString()}</td>
+                    <td style="padding: 10px; text-align: right; font-size: 14px; color: #27ae60; font-weight: bold;">NT$ ${subtotal.toLocaleString()}</td>
                   </tr>
                 `;
                 })
@@ -2216,8 +2437,8 @@ async function exportToPDF() {
     document.body.removeChild(summaryDiv);
 
     // ==================== 分批渲染訂單明細頁（橫向）====================
-    // 每頁顯示的訂單數量（根據 A4 橫向頁面大小調整）
-    const ORDERS_PER_PAGE = 25;
+    // 每頁顯示的訂單數量（減少數量以加大字體）
+    const ORDERS_PER_PAGE = 12;
     const totalPages = Math.ceil(sortedOrders.length / ORDERS_PER_PAGE);
 
     for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
@@ -2236,31 +2457,33 @@ async function exportToPDF() {
       // 創建此頁的 HTML
       const pageDiv = document.createElement("div");
       pageDiv.style.cssText =
-        "width: 297mm; height: 210mm; padding: 8mm 10mm; background: white; font-family: 'Microsoft JhengHei', Arial, sans-serif; box-sizing: border-box; position: absolute; left: -9999px; top: 0;";
+        "width: 297mm; height: 210mm; padding: 10mm 12mm; background: white; font-family: 'Microsoft JhengHei', Arial, sans-serif; box-sizing: border-box; position: absolute; left: -9999px; top: 0;";
 
       let pageHTML = `
-        <div style="text-align: center; margin-bottom: 8px;">
-          <h1 style="color: #e74c3c; font-size: 18px; margin: 0 0 3px 0;">訂單明細</h1>
-          <p style="font-size: 10px; color: #666; margin: 0;">共 ${sortedOrders.length} 筆訂單 ｜ 第 ${pageIndex + 1} / ${totalPages} 頁</p>
+        <div style="text-align: center; margin-bottom: 10px;">
+          <h1 style="color: #e74c3c; font-size: 22px; margin: 0 0 5px 0;">訂單明細</h1>
+          <p style="font-size: 12px; color: #666; margin: 0;">共 ${sortedOrders.length} 筆訂單 ｜ 第 ${pageIndex + 1} / ${totalPages} 頁</p>
         </div>
         
-        <table style="width: 100%; border-collapse: collapse; font-size: 9px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
           <thead>
             <tr style="background: #e74c3c; color: white;">
-              <th style="padding: 5px 3px; text-align: center; border: 1px solid #c0392b; font-size: 9px; white-space: nowrap;">序號</th>
-              <th style="padding: 5px 3px; text-align: left; border: 1px solid #c0392b; font-size: 9px; white-space: nowrap;">訂單號碼</th>
-              <th style="padding: 5px 3px; text-align: left; border: 1px solid #c0392b; font-size: 9px; white-space: nowrap;">訂購人</th>
-              <th style="padding: 5px 3px; text-align: left; border: 1px solid #c0392b; font-size: 9px; white-space: nowrap;">電話</th>
-              <th style="padding: 5px 3px; text-align: left; border: 1px solid #c0392b; font-size: 9px; white-space: nowrap;">群組</th>
+              <th style="padding: 8px 4px; text-align: center; border: 1px solid #c0392b; font-size: 12px;">序</th>
+              <th style="padding: 8px 4px; text-align: center; border: 1px solid #c0392b; font-size: 12px;">單號</th>
+              <th style="padding: 8px 4px; text-align: left; border: 1px solid #c0392b; font-size: 12px;">訂購人</th>
+              <th style="padding: 8px 4px; text-align: left; border: 1px solid #c0392b; font-size: 12px;">電話</th>
+              <th style="padding: 8px 4px; text-align: center; border: 1px solid #c0392b; font-size: 12px;">群組</th>
+              <th style="padding: 8px 4px; text-align: center; border: 1px solid #c0392b; font-size: 12px;">付款</th>
       `;
 
-      // 動態生成菜品欄位標題
+      // 動態生成菜品欄位標題（使用縮寫）
       DISHES.forEach((dish) => {
-        pageHTML += `<th style="padding: 5px 2px; text-align: center; border: 1px solid #c0392b; font-size: 8px; white-space: nowrap;">${dish.name}</th>`;
+        const shortName = dishShortNames[dish.name] || dish.name;
+        pageHTML += `<th style="padding: 8px 3px; text-align: center; border: 1px solid #c0392b; font-size: 11px;">${shortName}</th>`;
       });
 
       pageHTML += `
-              <th style="padding: 5px 3px; text-align: right; border: 1px solid #c0392b; font-size: 9px; white-space: nowrap;">總金額</th>
+              <th style="padding: 8px 4px; text-align: right; border: 1px solid #c0392b; font-size: 12px;">總金額</th>
             </tr>
           </thead>
           <tbody>
@@ -2271,14 +2494,26 @@ async function exportToPDF() {
         const globalIndex = startIndex + index;
         const rowStyle =
           index % 2 === 0 ? "background: #f9f9f9;" : "background: white;";
+        const paymentStatus = order.paymentStatus === "paid" ? "✓" : "✗";
+        const paymentColor =
+          order.paymentStatus === "paid" ? "#27ae60" : "#e74c3c";
+
+        // 檢查是否有備註（客製訂單）
+        const hasNote =
+          order.customer.note && order.customer.note.trim() !== "";
+        const noteIcon = hasNote ? " 📝" : "";
+        const rowBgStyle = hasNote
+          ? "background: linear-gradient(90deg, #fff9e6 0%, #ffffff 100%);"
+          : rowStyle;
 
         pageHTML += `
-          <tr style="${rowStyle}">
-            <td style="padding: 4px 3px; text-align: center; border: 1px solid #ddd; font-size: 9px;">${globalIndex + 1}</td>
-            <td style="padding: 4px 3px; border: 1px solid #ddd; font-size: 9px;">${order.orderNumber || order.id}</td>
-            <td style="padding: 4px 3px; border: 1px solid #ddd; font-size: 9px;">${order.customer.name}</td>
-            <td style="padding: 4px 3px; border: 1px solid #ddd; font-size: 8px;">${order.customer.phone}</td>
-            <td style="padding: 4px 3px; border: 1px solid #ddd; font-size: 8px;">${order.customer.group || "未分組"}</td>
+          <tr style="${rowBgStyle}">
+            <td style="padding: 6px 4px; text-align: center; border: 1px solid #ddd; font-size: 12px;">${globalIndex + 1}</td>
+            <td style="padding: 6px 4px; text-align: center; border: 1px solid #ddd; font-size: 12px;">${order.orderNumber || order.id}${noteIcon}</td>
+            <td style="padding: 6px 4px; border: 1px solid #ddd; font-size: 12px;">${order.customer.name}</td>
+            <td style="padding: 6px 4px; border: 1px solid #ddd; font-size: 11px;">${order.customer.phone}</td>
+            <td style="padding: 6px 4px; text-align: center; border: 1px solid #ddd; font-size: 11px;">${order.customer.group || "未分組"}</td>
+            <td style="padding: 6px 4px; text-align: center; border: 1px solid #ddd; font-size: 14px; font-weight: bold; color: ${paymentColor};">${paymentStatus}</td>
         `;
 
         // 填入各菜品的訂購數量
@@ -2287,12 +2522,12 @@ async function exportToPDF() {
             ? order.dishQuantities[dish.name] || 0
             : 0;
           const cellStyle =
-            qty > 0 ? "font-weight: bold; color: #e74c3c;" : "color: #999;";
-          pageHTML += `<td style="padding: 4px 2px; text-align: center; border: 1px solid #ddd; font-size: 9px; ${cellStyle}">${qty > 0 ? qty : "-"}</td>`;
+            qty > 0 ? "font-weight: bold; color: #e74c3c;" : "color: #ccc;";
+          pageHTML += `<td style="padding: 6px 3px; text-align: center; border: 1px solid #ddd; font-size: 12px; ${cellStyle}">${qty > 0 ? qty : "-"}</td>`;
         });
 
         pageHTML += `
-            <td style="padding: 4px 3px; text-align: right; border: 1px solid #ddd; font-weight: bold; color: #27ae60; font-size: 9px;">NT$ ${(order.total || 0).toLocaleString()}</td>
+            <td style="padding: 6px 4px; text-align: right; border: 1px solid #ddd; font-weight: bold; color: #27ae60; font-size: 12px;">$${(order.total || 0).toLocaleString()}</td>
           </tr>
         `;
       });
@@ -2301,8 +2536,8 @@ async function exportToPDF() {
       if (isLastPage) {
         pageHTML += `
           <tr style="background: #fff3cd; font-weight: bold;">
-            <td colspan="2" style="padding: 5px 3px; text-align: center; border: 1px solid #ddd; color: #e74c3c; font-size: 9px;">【統計】</td>
-            <td colspan="3" style="padding: 5px 3px; border: 1px solid #ddd;"></td>
+            <td colspan="2" style="padding: 8px 4px; text-align: center; border: 1px solid #ddd; color: #e74c3c; font-size: 12px;">【統計】</td>
+            <td colspan="4" style="padding: 8px 4px; border: 1px solid #ddd; font-size: 11px; color: #666;">已付: ${paidCount} / 未付: ${unpaidCount}</td>
         `;
 
         // 計算各菜品總數量
@@ -2311,11 +2546,11 @@ async function exportToPDF() {
             if (!order.dishQuantities) return sum;
             return sum + (order.dishQuantities[dish.name] || 0);
           }, 0);
-          pageHTML += `<td style="padding: 5px 2px; text-align: center; border: 1px solid #ddd; color: #e74c3c; font-size: 9px;">${totalQty > 0 ? totalQty : "-"}</td>`;
+          pageHTML += `<td style="padding: 8px 3px; text-align: center; border: 1px solid #ddd; color: #e74c3c; font-size: 12px; font-weight: bold;">${totalQty > 0 ? totalQty : "-"}</td>`;
         });
 
         pageHTML += `
-            <td style="padding: 5px 3px; text-align: right; border: 1px solid #ddd; color: #27ae60; font-size: 9px;">NT$ ${grandTotal.toLocaleString()}</td>
+            <td style="padding: 8px 4px; text-align: right; border: 1px solid #ddd; color: #27ae60; font-size: 12px; font-weight: bold;">$${grandTotal.toLocaleString()}</td>
           </tr>
         `;
       }

@@ -1841,6 +1841,7 @@ header p {
 .orders-table .order-total {
   font-weight: 600;
   color: #27ae60;
+  text-align: left;
 }
 
 .orders-table .order-date {
@@ -1848,9 +1849,41 @@ header p {
   font-size: 0.85em;
 }
 
+.orders-table .payment-status {
+  text-align: left;
+}
+
 .orders-table .order-actions {
   display: flex;
   gap: 8px;
+  justify-content: flex-start;
+}
+
+/* 備註標記樣式 */
+.note-indicator {
+  display: inline-block;
+  margin-left: 5px;
+  font-size: 1em;
+  cursor: help;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.orders-table tr.has-note {
+  background: linear-gradient(90deg, #fff9e6 0%, #ffffff 100%);
+}
+
+.orders-table tr.has-note:hover {
+  background: linear-gradient(90deg, #fff3cd 0%, #f8f9fa 100%);
 }
 
 .orders-table .btn-detail,
@@ -2234,5 +2267,83 @@ header p {
 
   .detail-table tbody tr {
     padding: 10px;
+  }
+}
+
+/* ==================== 付款狀態樣式 ==================== */
+.payment-status {
+  text-align: center;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85em;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+/* 管理員模式下可點擊的狀態標籤 */
+.status-badge.clickable {
+  cursor: pointer;
+}
+
+.status-badge.clickable:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.status-badge.status-paid {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  color: #155724;
+  border: 1px solid #28a745;
+}
+
+.status-badge.status-unpaid {
+  background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+  color: #721c24;
+  border: 1px solid #dc3545;
+}
+
+/* 訂單詳情中的狀態樣式 */
+.info-value.status-badge {
+  padding: 4px 10px;
+  font-size: 0.9em;
+}
+
+/* 手機版付款狀態 */
+@media (max-width: 768px) {
+  .status-badge {
+    padding: 8px 16px;
+    font-size: 0.9em;
+  }
+}
+
+/* ==================== 列印保護樣式 ==================== */
+@media print {
+  /* 預設隱藏所有內容（非管理員模式） */
+  body:not(.admin-mode-active) * {
+    visibility: hidden !important;
+  }
+
+  body:not(.admin-mode-active)::before {
+    content: "⚠️ 僅管理員可列印此頁面";
+    visibility: visible !important;
+    display: block;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    color: #e74c3c;
+    font-weight: bold;
+    text-align: center;
+  }
+
+  /* 管理員模式下正常顯示 */
+  body.admin-mode-active * {
+    visibility: visible !important;
   }
 }
