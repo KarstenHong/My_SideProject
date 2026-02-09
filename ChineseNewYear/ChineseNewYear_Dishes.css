@@ -203,6 +203,22 @@ header p {
   transition: background 0.2s ease;
 }
 
+/* 菜品管理列表專用樣式 */
+#manageDishList .dish-input-row {
+  grid-template-columns: 2fr 1fr auto;
+}
+
+.dish-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.dish-actions .btn-edit,
+.dish-actions .btn-delete {
+  padding: 6px 12px;
+  font-size: 0.85em;
+}
+
 .dish-input-row:hover {
   background: #f8f9fa;
 }

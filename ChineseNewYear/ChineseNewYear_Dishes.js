@@ -316,6 +316,19 @@ async function deleteOrderFromFirebase(firebaseId) {
   }
 }
 
+// 預設圖片對照表（用於合併 Firebase 資料）
+const DEFAULT_DISH_IMAGES = {
+  "甘蔗香燻雞": "images/dishes/smoked-chicken.jpg",
+  "糖醋海鱸魚": "images/dishes/sweet-sour-fish.jpg",
+  "洪家筍干Q蹄膀": "images/dishes/pork-knuckle.jpg",
+  "皇品魚翅蝦仁羹": "images/dishes/shrimp-soup.jpg",
+  "櫻花蝦米糕": "images/dishes/shrimp-rice-cake.jpg",
+  "御品干貝佛跳牆(不含甕)": "images/dishes/buddha-jumps.jpg",
+  "蜜汁全排骨(五支)": "images/dishes/honey-ribs.jpg",
+  "白雪旗魚丸(一斤)": "images/dishes/fish-balls.jpg",
+  "極鮮旗魚卷": "images/dishes/fish-roll.jpg",
+};
+
 // 從 Firebase 載入菜品（保持監聽）
 function startDishesListener() {
   if (!isFirebaseEnabled) {
@@ -329,13 +342,46 @@ function startDishesListener() {
         if (doc.exists) {
           const firebaseDishes = doc.data().list;
           console.log(`✅ 菜品已更新: ${firebaseDishes.length} 個`);
-          DISHES = firebaseDishes;
+          
+          // 保存本地的圖片資料（用於合併）
+          const localImages = {};
+          DISHES.forEach(dish => {
+            if (dish.image && dish.image.startsWith('data:')) {
+              localImages[dish.name] = dish.image;
+            }
+          });
+          
+          // 合併圖片資料：優先順序為 Firebase > 本地 Base64 > 預設圖片
+          DISHES = firebaseDishes.map(dish => {
+            let image = dish.image || "";
+            
+            // 如果 Firebase 沒有圖片，嘗試使用本地圖片
+            if (!image && localImages[dish.name]) {
+              image = localImages[dish.name];
+            }
+            
+            // 如果還是沒有，使用預設圖片
+            if (!image) {
+              image = DEFAULT_DISH_IMAGES[dish.name] || "";
+            }
+            
+            return {
+              ...dish,
+              image: image
+            };
+          });
+          
           localStorage.setItem("dishes", JSON.stringify(DISHES));
           renderDishesInForm(); // 重新渲染菜品列表
+          
+          // 如果在點餐頁面，重新渲染菜品網格
+          if (typeof renderDishesGrid === "function") {
+            renderDishesGrid();
+          }
         }
       },
       (error) => {
-        console.error("❌ 監聽菜品失敗:", error);
+        console.error("❌ 監聯菜品失敗:", error);
       },
     );
 }
@@ -347,13 +393,31 @@ async function saveDishesToFirebase() {
   }
 
   try {
+    // 計算資料大小
+    const dataString = JSON.stringify(DISHES);
+    const dataSizeKB = (dataString.length / 1024).toFixed(1);
+    console.log(`📦 菜品資料大小: ${dataSizeKB}KB`);
+    
+    // Firestore 文件大小限制為 1MB，如果太大則警告
+    if (dataString.length > 900 * 1024) {
+      console.warn("⚠️ 菜品資料過大，可能無法同步到 Firebase");
+      showAlert("圖片資料過大，可能無法同步到雲端。建議使用較小的圖片。", "warning");
+    }
+    
     await db.collection("settings").doc("dishes").set({
       list: DISHES,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
-    console.log("✅ 菜品已同步到 Firebase");
+    console.log("✅ 菜品已同步到 Firebase（包含圖片）");
   } catch (error) {
     console.error("❌ 同步菜品到 Firebase 失敗:", error);
+    
+    // 如果是資料太大的錯誤，給予明確提示
+    if (error.message && error.message.includes('size')) {
+      showAlert("圖片資料過大，無法同步到雲端。請使用較小的圖片（建議小於 100KB）。", "error");
+    } else {
+      showAlert("同步到雲端失敗：" + error.message, "error");
+    }
   }
 }
 
@@ -391,22 +455,56 @@ async function saveDishes() {
 }
 
 // 菜品列表 - 從 localStorage 載入，如果沒有則使用預設值
+// 圖片請放置於 images/dishes/ 資料夾中，檔名對應 image 欄位
 let DISHES = JSON.parse(localStorage.getItem("dishes")) || [
-  { name: "甘蔗香燻雞", price: 680 },
-  { name: "糖醋海鱸魚", price: 400 },
-  { name: "洪家筍干Q蹄膀", price: 700 },
-  { name: "皇品魚翅蝦仁羹", price: 700 },
-  { name: "櫻花蝦米糕", price: 400 },
-  { name: "御品干貝佛跳牆(不含甕)", price: 850 },
-  { name: "蜜汁全排骨(五支)", price: 320 },
-  { name: "白雪旗魚丸(一斤)", price: 230 },
-  { name: "極鮮旗魚卷", price: 130 },
+  { name: "甘蔗香燻雞", price: 680, image: "images/dishes/smoked-chicken.jpg" },
+  {
+    name: "糖醋海鱸魚",
+    price: 400,
+    image: "images/dishes/sweet-sour-fish.jpg",
+  },
+  {
+    name: "洪家筍干Q蹄膀",
+    price: 700,
+    image: "images/dishes/pork-knuckle.jpg",
+  },
+  {
+    name: "皇品魚翅蝦仁羹",
+    price: 700,
+    image: "images/dishes/shrimp-soup.jpg",
+  },
+  {
+    name: "櫻花蝦米糕",
+    price: 400,
+    image: "images/dishes/shrimp-rice-cake.jpg",
+  },
+  {
+    name: "御品干貝佛跳牆(不含甕)",
+    price: 850,
+    image: "images/dishes/buddha-jumps.jpg",
+  },
+  {
+    name: "蜜汁全排骨(五支)",
+    price: 320,
+    image: "images/dishes/honey-ribs.jpg",
+  },
+  {
+    name: "白雪旗魚丸(一斤)",
+    price: 230,
+    image: "images/dishes/fish-balls.jpg",
+  },
+  { name: "極鮮旗魚卷", price: 130, image: "images/dishes/fish-roll.jpg" },
 ];
 
-// 如果是首次使用，儲存預設菜品
-if (!localStorage.getItem("dishes")) {
+// 檢查並更新菜品資料（確保有 image 欄位）
+const storedDishes = JSON.parse(localStorage.getItem("dishes"));
+if (!storedDishes || !storedDishes[0]?.image) {
+  // 如果沒有菜品資料，或舊資料沒有 image 欄位，則使用預設值
   localStorage.setItem("dishes", JSON.stringify(DISHES));
-  console.log("首次載入，已儲存預設菜品");
+  console.log("已更新菜品資料（新增圖片欄位）");
+} else {
+  // 使用已儲存的資料
+  DISHES = storedDishes;
 }
 
 // 安全載入訂單數據並驗證
@@ -2624,14 +2722,99 @@ function showAddDishModal() {
 // 關閉新增菜品 Modal
 function closeAddDishModal() {
   document.getElementById("addDishModal").style.display = "none";
+  // 重置圖片預覽
+  const preview = document.getElementById("dishImagePreview");
+  if (preview) {
+    preview.style.display = "none";
+  }
+}
+
+// 圖片預覽功能
+function previewDishImage(input) {
+  const preview = document.getElementById("dishImagePreview");
+  const previewImg = document.getElementById("dishImagePreviewImg");
+  
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+    
+    // 檢查檔案大小（建議小於 200KB，系統會自動壓縮）
+    if (file.size > 200 * 1024) {
+      showAlert("圖片較大，系統將自動壓縮以確保能夠儲存", "info");
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      previewImg.src = e.target.result;
+      preview.style.display = "block";
+    };
+    reader.readAsDataURL(file);
+  } else {
+    preview.style.display = "none";
+  }
+}
+
+// 將圖片檔案轉為 Base64（含壓縮）
+function getImageBase64(inputElement, maxWidth = 300, quality = 0.7) {
+  return new Promise((resolve, reject) => {
+    if (!inputElement.files || !inputElement.files[0]) {
+      resolve("");
+      return;
+    }
+    
+    const file = inputElement.files[0];
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+      // 建立圖片元素進行壓縮
+      const img = new Image();
+      img.onload = function() {
+        // 計算壓縮後的尺寸
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        
+        // 使用 canvas 壓縮圖片
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // 轉換為壓縮後的 Base64
+        const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+        console.log(`圖片已壓縮: ${(compressedBase64.length / 1024).toFixed(1)}KB`);
+        resolve(compressedBase64);
+      };
+      
+      img.onerror = function() {
+        console.error("圖片載入失敗");
+        resolve("");
+      };
+      
+      img.src = e.target.result;
+    };
+    
+    reader.onerror = function(error) {
+      console.error("讀取圖片失敗:", error);
+      resolve("");
+    };
+    
+    reader.readAsDataURL(file);
+  });
 }
 
 // 處理新增菜品
-function handleAddDish(event) {
+async function handleAddDish(event) {
   event.preventDefault();
 
   const name = document.getElementById("newDishName").value.trim();
   const price = parseInt(document.getElementById("newDishPrice").value);
+  const imageInput = document.getElementById("newDishImage");
 
   // 檢查菜品名稱是否重複
   if (DISHES.some((dish) => dish.name === name)) {
@@ -2639,16 +2822,153 @@ function handleAddDish(event) {
     return;
   }
 
-  // 新增菜品
-  DISHES.push({ name, price });
+  // 取得圖片 Base64
+  let image = "";
+  if (imageInput && imageInput.files && imageInput.files[0]) {
+    image = await getImageBase64(imageInput);
+  }
+
+  // 新增菜品（包含圖片）
+  const newDish = { name, price };
+  if (image) {
+    newDish.image = image;
+  }
+  DISHES.push(newDish);
   saveDishes();
 
   // 重新渲染菜品列表
   renderDishesInForm();
   renderDishManagementList();
+  
+  // 如果在點餐頁面，也更新菜品網格
+  if (typeof renderDishesGrid === "function") {
+    renderDishesGrid();
+  }
 
   closeAddDishModal();
   showAlert("菜品新增成功！", "success");
+}
+
+// ==================== 編輯菜品功能 ====================
+
+// 顯示編輯菜品 Modal
+function showEditDishModal(dishName) {
+  const dish = DISHES.find(d => d.name === dishName);
+  if (!dish) {
+    showAlert("找不到此菜品", "error");
+    return;
+  }
+
+  // 填入現有資料
+  document.getElementById("editDishOriginalName").value = dish.name;
+  document.getElementById("editDishName").value = dish.name;
+  document.getElementById("editDishPrice").value = dish.price;
+
+  // 顯示現有圖片
+  const currentImageContainer = document.getElementById("editDishCurrentImage");
+  if (dish.image) {
+    currentImageContainer.innerHTML = `<img src="${dish.image}" style="max-width: 150px; max-height: 150px; border-radius: 8px; border: 2px solid #ddd;" />`;
+  } else {
+    currentImageContainer.innerHTML = '<span style="color: #999;">無圖片</span>';
+  }
+
+  // 重置新圖片預覽
+  const preview = document.getElementById("editDishImagePreview");
+  if (preview) {
+    preview.style.display = "none";
+  }
+  const imageInput = document.getElementById("editDishImage");
+  if (imageInput) {
+    imageInput.value = "";
+  }
+
+  document.getElementById("editDishModal").style.display = "block";
+}
+
+// 關閉編輯菜品 Modal
+function closeEditDishModal() {
+  document.getElementById("editDishModal").style.display = "none";
+}
+
+// 編輯菜品圖片預覽
+function previewEditDishImage(input) {
+  const preview = document.getElementById("editDishImagePreview");
+  const previewImg = document.getElementById("editDishImagePreviewImg");
+  
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+    
+    if (file.size > 200 * 1024) {
+      showAlert("圖片較大，系統將自動壓縮以確保能夠儲存", "info");
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      previewImg.src = e.target.result;
+      preview.style.display = "block";
+    };
+    reader.readAsDataURL(file);
+  } else {
+    preview.style.display = "none";
+  }
+}
+
+// 處理編輯菜品
+async function handleEditDish(event) {
+  event.preventDefault();
+
+  const originalName = document.getElementById("editDishOriginalName").value;
+  const newName = document.getElementById("editDishName").value.trim();
+  const newPrice = parseInt(document.getElementById("editDishPrice").value);
+  const imageInput = document.getElementById("editDishImage");
+
+  // 檢查新名稱是否與其他菜品重複（排除自己）
+  if (newName !== originalName && DISHES.some(d => d.name === newName)) {
+    showAlert("此菜品名稱已存在！", "error");
+    return;
+  }
+
+  // 找到原菜品
+  const dishIndex = DISHES.findIndex(d => d.name === originalName);
+  if (dishIndex === -1) {
+    showAlert("找不到此菜品", "error");
+    return;
+  }
+
+  // 更新菜品資料
+  DISHES[dishIndex].name = newName;
+  DISHES[dishIndex].price = newPrice;
+
+  // 如果有選擇新圖片，更新圖片
+  if (imageInput && imageInput.files && imageInput.files[0]) {
+    const newImage = await getImageBase64(imageInput);
+    DISHES[dishIndex].image = newImage;
+  }
+
+  // 如果菜品名稱改變，需要更新訂單中的菜品名稱
+  if (newName !== originalName) {
+    orders.forEach(order => {
+      if (order.dishQuantities && order.dishQuantities[originalName]) {
+        order.dishQuantities[newName] = order.dishQuantities[originalName];
+        delete order.dishQuantities[originalName];
+      }
+    });
+    localStorage.setItem("orders", JSON.stringify(orders));
+  }
+
+  // 儲存菜品
+  saveDishes();
+
+  // 重新渲染
+  renderDishesInForm();
+  renderDishManagementList();
+  
+  if (typeof renderDishesGrid === "function") {
+    renderDishesGrid();
+  }
+
+  closeEditDishModal();
+  showAlert("菜品已更新！", "success");
 }
 
 // 刪除菜品
@@ -2725,12 +3045,6 @@ function renderDishesInForm() {
         `;
     container.appendChild(row);
   });
-
-  console.log(
-    "菜品渲染完成，容器內現在有",
-    container.children.length,
-    "個元素",
-  );
 }
 
 // 渲染菜品管理列表
@@ -2749,10 +3063,14 @@ function renderDishManagementList() {
   DISHES.forEach((dish) => {
     const row = document.createElement("div");
     row.className = "dish-input-row";
+    const hasImage = dish.image ? '✅' : '❌';
     row.innerHTML = `
-            <div class="dish-name">${dish.name}</div>
+            <div class="dish-name">${dish.name} <span style="font-size: 0.8em; color: #888;">${hasImage} 圖片</span></div>
             <div class="dish-price">NT$ ${dish.price}</div>
-            <button type="button" class="btn-delete" onclick="deleteDish('${dish.name}')">🗑️ 刪除</button>
+            <div class="dish-actions">
+              <button type="button" class="btn-edit" onclick="showEditDishModal('${dish.name}')">✏️ 編輯</button>
+              <button type="button" class="btn-delete" onclick="deleteDish('${dish.name}')">🗑️ 刪除</button>
+            </div>
         `;
     container.appendChild(row);
   });

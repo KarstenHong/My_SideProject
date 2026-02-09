@@ -130,6 +130,39 @@
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
       }
 
+      .dish-image-container {
+        width: 100%;
+        height: 100px;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #f5f5f5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .dish-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+      }
+
+      .dish-card:hover .dish-image {
+        transform: scale(1.05);
+      }
+
+      .dish-image-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #ffe6e6 0%, #fff5e6 100%);
+        color: #e74c3c;
+        font-size: 2em;
+      }
+
       .dish-name {
         font-weight: bold;
         color: #333;
@@ -662,10 +695,25 @@
           return;
         }
 
+        // 除錯：顯示菜品資料
+        console.log("菜品資料:", dishesArray);
+
         dishesArray.forEach((dish, index) => {
           const card = document.createElement("div");
           card.className = "dish-card";
+
+          // 除錯：顯示每道菜的圖片路徑
+          console.log(`菜品 ${index}: ${dish.name}, 圖片: ${dish.image || '無'}`);
+
+          // 處理圖片顯示：如果有圖片則顯示，否則顯示預設圖示
+          const imageHtml = dish.image
+            ? `<img class="dish-image" src="${dish.image}" alt="${dish.name}" onerror="this.onerror=null; this.style.display='none'; this.parentElement.innerHTML='<div class=\\'dish-image-placeholder\\'>🍽️</div>';">`
+            : `<div class="dish-image-placeholder">🍽️</div>`;
+
           card.innerHTML = `
+            <div class="dish-image-container">
+              ${imageHtml}
+            </div>
             <div class="dish-name">${dish.name}</div>
             <div class="dish-price">NT$ ${dish.price}</div>
             <div class="dish-quantity-control">
