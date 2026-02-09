@@ -318,15 +318,15 @@ async function deleteOrderFromFirebase(firebaseId) {
 
 // 預設圖片對照表（用於合併 Firebase 資料）
 const DEFAULT_DISH_IMAGES = {
-  "甘蔗香燻雞": "images/dishes/smoked-chicken.jpg",
-  "糖醋海鱸魚": "images/dishes/sweet-sour-fish.jpg",
-  "洪家筍干Q蹄膀": "images/dishes/pork-knuckle.jpg",
-  "皇品魚翅蝦仁羹": "images/dishes/shrimp-soup.jpg",
-  "櫻花蝦米糕": "images/dishes/shrimp-rice-cake.jpg",
+  甘蔗香燻雞: "images/dishes/smoked-chicken.jpg",
+  糖醋海鱸魚: "images/dishes/sweet-sour-fish.jpg",
+  洪家筍干Q蹄膀: "images/dishes/pork-knuckle.jpg",
+  皇品魚翅蝦仁羹: "images/dishes/shrimp-soup.jpg",
+  櫻花蝦米糕: "images/dishes/shrimp-rice-cake.jpg",
   "御品干貝佛跳牆(不含甕)": "images/dishes/buddha-jumps.jpg",
   "蜜汁全排骨(五支)": "images/dishes/honey-ribs.jpg",
   "白雪旗魚丸(一斤)": "images/dishes/fish-balls.jpg",
-  "極鮮旗魚卷": "images/dishes/fish-roll.jpg",
+  極鮮旗魚卷: "images/dishes/fish-roll.jpg",
 };
 
 // 從 Firebase 載入菜品（保持監聽）
@@ -342,38 +342,38 @@ function startDishesListener() {
         if (doc.exists) {
           const firebaseDishes = doc.data().list;
           console.log(`✅ 菜品已更新: ${firebaseDishes.length} 個`);
-          
+
           // 保存本地的圖片資料（用於合併）
           const localImages = {};
-          DISHES.forEach(dish => {
-            if (dish.image && dish.image.startsWith('data:')) {
+          DISHES.forEach((dish) => {
+            if (dish.image && dish.image.startsWith("data:")) {
               localImages[dish.name] = dish.image;
             }
           });
-          
+
           // 合併圖片資料：優先順序為 Firebase > 本地 Base64 > 預設圖片
-          DISHES = firebaseDishes.map(dish => {
+          DISHES = firebaseDishes.map((dish) => {
             let image = dish.image || "";
-            
+
             // 如果 Firebase 沒有圖片，嘗試使用本地圖片
             if (!image && localImages[dish.name]) {
               image = localImages[dish.name];
             }
-            
+
             // 如果還是沒有，使用預設圖片
             if (!image) {
               image = DEFAULT_DISH_IMAGES[dish.name] || "";
             }
-            
+
             return {
               ...dish,
-              image: image
+              image: image,
             };
           });
-          
+
           localStorage.setItem("dishes", JSON.stringify(DISHES));
           renderDishesInForm(); // 重新渲染菜品列表
-          
+
           // 如果在點餐頁面，重新渲染菜品網格
           if (typeof renderDishesGrid === "function") {
             renderDishesGrid();
@@ -397,13 +397,16 @@ async function saveDishesToFirebase() {
     const dataString = JSON.stringify(DISHES);
     const dataSizeKB = (dataString.length / 1024).toFixed(1);
     console.log(`📦 菜品資料大小: ${dataSizeKB}KB`);
-    
+
     // Firestore 文件大小限制為 1MB，如果太大則警告
     if (dataString.length > 900 * 1024) {
       console.warn("⚠️ 菜品資料過大，可能無法同步到 Firebase");
-      showAlert("圖片資料過大，可能無法同步到雲端。建議使用較小的圖片。", "warning");
+      showAlert(
+        "圖片資料過大，可能無法同步到雲端。建議使用較小的圖片。",
+        "warning",
+      );
     }
-    
+
     await db.collection("settings").doc("dishes").set({
       list: DISHES,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -411,10 +414,13 @@ async function saveDishesToFirebase() {
     console.log("✅ 菜品已同步到 Firebase（包含圖片）");
   } catch (error) {
     console.error("❌ 同步菜品到 Firebase 失敗:", error);
-    
+
     // 如果是資料太大的錯誤，給予明確提示
-    if (error.message && error.message.includes('size')) {
-      showAlert("圖片資料過大，無法同步到雲端。請使用較小的圖片（建議小於 100KB）。", "error");
+    if (error.message && error.message.includes("size")) {
+      showAlert(
+        "圖片資料過大，無法同步到雲端。請使用較小的圖片（建議小於 100KB）。",
+        "error",
+      );
     } else {
       showAlert("同步到雲端失敗：" + error.message, "error");
     }
@@ -2733,17 +2739,17 @@ function closeAddDishModal() {
 function previewDishImage(input) {
   const preview = document.getElementById("dishImagePreview");
   const previewImg = document.getElementById("dishImagePreviewImg");
-  
+
   if (input.files && input.files[0]) {
     const file = input.files[0];
-    
+
     // 檢查檔案大小（建議小於 200KB，系統會自動壓縮）
     if (file.size > 200 * 1024) {
       showAlert("圖片較大，系統將自動壓縮以確保能夠儲存", "info");
     }
-    
+
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
       previewImg.src = e.target.result;
       preview.style.display = "block";
     };
@@ -2760,50 +2766,52 @@ function getImageBase64(inputElement, maxWidth = 300, quality = 0.7) {
       resolve("");
       return;
     }
-    
+
     const file = inputElement.files[0];
     const reader = new FileReader();
-    
-    reader.onload = function(e) {
+
+    reader.onload = function (e) {
       // 建立圖片元素進行壓縮
       const img = new Image();
-      img.onload = function() {
+      img.onload = function () {
         // 計算壓縮後的尺寸
         let width = img.width;
         let height = img.height;
-        
+
         if (width > maxWidth) {
           height = (height * maxWidth) / width;
           width = maxWidth;
         }
-        
+
         // 使用 canvas 壓縮圖片
-        const canvas = document.createElement('canvas');
+        const canvas = document.createElement("canvas");
         canvas.width = width;
         canvas.height = height;
-        
-        const ctx = canvas.getContext('2d');
+
+        const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, width, height);
-        
+
         // 轉換為壓縮後的 Base64
-        const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
-        console.log(`圖片已壓縮: ${(compressedBase64.length / 1024).toFixed(1)}KB`);
+        const compressedBase64 = canvas.toDataURL("image/jpeg", quality);
+        console.log(
+          `圖片已壓縮: ${(compressedBase64.length / 1024).toFixed(1)}KB`,
+        );
         resolve(compressedBase64);
       };
-      
-      img.onerror = function() {
+
+      img.onerror = function () {
         console.error("圖片載入失敗");
         resolve("");
       };
-      
+
       img.src = e.target.result;
     };
-    
-    reader.onerror = function(error) {
+
+    reader.onerror = function (error) {
       console.error("讀取圖片失敗:", error);
       resolve("");
     };
-    
+
     reader.readAsDataURL(file);
   });
 }
@@ -2839,7 +2847,7 @@ async function handleAddDish(event) {
   // 重新渲染菜品列表
   renderDishesInForm();
   renderDishManagementList();
-  
+
   // 如果在點餐頁面，也更新菜品網格
   if (typeof renderDishesGrid === "function") {
     renderDishesGrid();
@@ -2853,7 +2861,7 @@ async function handleAddDish(event) {
 
 // 顯示編輯菜品 Modal
 function showEditDishModal(dishName) {
-  const dish = DISHES.find(d => d.name === dishName);
+  const dish = DISHES.find((d) => d.name === dishName);
   if (!dish) {
     showAlert("找不到此菜品", "error");
     return;
@@ -2869,7 +2877,8 @@ function showEditDishModal(dishName) {
   if (dish.image) {
     currentImageContainer.innerHTML = `<img src="${dish.image}" style="max-width: 150px; max-height: 150px; border-radius: 8px; border: 2px solid #ddd;" />`;
   } else {
-    currentImageContainer.innerHTML = '<span style="color: #999;">無圖片</span>';
+    currentImageContainer.innerHTML =
+      '<span style="color: #999;">無圖片</span>';
   }
 
   // 重置新圖片預覽
@@ -2894,16 +2903,16 @@ function closeEditDishModal() {
 function previewEditDishImage(input) {
   const preview = document.getElementById("editDishImagePreview");
   const previewImg = document.getElementById("editDishImagePreviewImg");
-  
+
   if (input.files && input.files[0]) {
     const file = input.files[0];
-    
+
     if (file.size > 200 * 1024) {
       showAlert("圖片較大，系統將自動壓縮以確保能夠儲存", "info");
     }
-    
+
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
       previewImg.src = e.target.result;
       preview.style.display = "block";
     };
@@ -2923,13 +2932,13 @@ async function handleEditDish(event) {
   const imageInput = document.getElementById("editDishImage");
 
   // 檢查新名稱是否與其他菜品重複（排除自己）
-  if (newName !== originalName && DISHES.some(d => d.name === newName)) {
+  if (newName !== originalName && DISHES.some((d) => d.name === newName)) {
     showAlert("此菜品名稱已存在！", "error");
     return;
   }
 
   // 找到原菜品
-  const dishIndex = DISHES.findIndex(d => d.name === originalName);
+  const dishIndex = DISHES.findIndex((d) => d.name === originalName);
   if (dishIndex === -1) {
     showAlert("找不到此菜品", "error");
     return;
@@ -2947,7 +2956,7 @@ async function handleEditDish(event) {
 
   // 如果菜品名稱改變，需要更新訂單中的菜品名稱
   if (newName !== originalName) {
-    orders.forEach(order => {
+    orders.forEach((order) => {
       if (order.dishQuantities && order.dishQuantities[originalName]) {
         order.dishQuantities[newName] = order.dishQuantities[originalName];
         delete order.dishQuantities[originalName];
@@ -2962,7 +2971,7 @@ async function handleEditDish(event) {
   // 重新渲染
   renderDishesInForm();
   renderDishManagementList();
-  
+
   if (typeof renderDishesGrid === "function") {
     renderDishesGrid();
   }
@@ -3063,7 +3072,7 @@ function renderDishManagementList() {
   DISHES.forEach((dish) => {
     const row = document.createElement("div");
     row.className = "dish-input-row";
-    const hasImage = dish.image ? '✅' : '❌';
+    const hasImage = dish.image ? "✅" : "❌";
     row.innerHTML = `
             <div class="dish-name">${dish.name} <span style="font-size: 0.8em; color: #888;">${hasImage} 圖片</span></div>
             <div class="dish-price">NT$ ${dish.price}</div>

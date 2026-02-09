@@ -703,7 +703,9 @@
           card.className = "dish-card";
 
           // 除錯：顯示每道菜的圖片路徑
-          console.log(`菜品 ${index}: ${dish.name}, 圖片: ${dish.image || '無'}`);
+          console.log(
+            `菜品 ${index}: ${dish.name}, 圖片: ${dish.image || "無"}`,
+          );
 
           // 處理圖片顯示：如果有圖片則顯示，否則顯示預設圖示
           const imageHtml = dish.image
