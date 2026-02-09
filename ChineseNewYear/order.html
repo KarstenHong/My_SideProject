@@ -25,7 +25,15 @@
         overflow: hidden;
       }
 
-      header {
+      header {      // 屬性路由範例
+      [Route("api/products/{id}")]
+      public Product GetProduct(int id) { }
+
+      // 慣例路由
+      config.Routes.MapHttpRoute(
+          name: "DefaultApi",
+          routeTemplate: "api/{controller}/{id}"
+      );
         padding: 15px 20px;
         flex-shrink: 0;
       }
@@ -549,6 +557,15 @@
             </div>
 
             <div class="form-field-compact">
+              <label for="paymentStatus">付款狀態 *</label>
+              <select id="paymentStatus" required>
+                <option value="unpaid">未付款</option>
+                <option value="paid">已付款</option>
+                <option value="partial">部分付款</option>
+              </select>
+            </div>
+
+            <div class="form-field-compact">
               <label for="customerNote">備註</label>
               <textarea
                 id="customerNote"
@@ -738,6 +755,7 @@
           .getElementById("customerPhone")
           .value.trim();
         const customerGroup = document.getElementById("customerGroup").value;
+        const paymentStatus = document.getElementById("paymentStatus").value;
         const customerNote = document
           .getElementById("customerNote")
           .value.trim();
@@ -785,7 +803,7 @@
           },
           dishQuantities: orderDishQuantities,
           total: total,
-          paymentStatus: "unpaid", // 預設為未付款
+          paymentStatus: paymentStatus, // 使用者選擇的付款狀態
           createdAt: new Date().toISOString(),
         };
 
