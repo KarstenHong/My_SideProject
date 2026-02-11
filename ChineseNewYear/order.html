@@ -25,15 +25,7 @@
         overflow: hidden;
       }
 
-      header {      // 屬性路由範例
-      [Route("api/products/{id}")]
-      public Product GetProduct(int id) { }
-
-      // 慣例路由
-      config.Routes.MapHttpRoute(
-          name: "DefaultApi",
-          routeTemplate: "api/{controller}/{id}"
-      );
+      header {
         padding: 15px 20px;
         flex-shrink: 0;
       }
