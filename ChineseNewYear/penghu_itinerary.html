@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>澎湖三天行程 7/4–7/6（2026）</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
+
+  :root {
+    --ocean: #0a6e8a;
+    --ocean-light: #1a9bbf;
+    --ocean-pale: #e0f4fa;
+    --coral: #e05c3a;
+    --coral-light: #f5876a;
+    --sand: #f7f0e6;
+    --sand-dark: #e8ddd0;
+    --gold: #d4a853;
+    --green: #2e8b57;
+    --purple: #7b5ea7;
+    --text: #2c3e50;
+    --text-light: #5d6d7e;
+    --white: #ffffff;
+    --radius: 12px;
+    --shadow: 0 2px 12px rgba(10,110,138,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+    background: var(--sand);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 13px;
+  }
+
+  /* ── COVER ── */
+  .cover {
+    background: linear-gradient(135deg, #0a4a6e 0%, #0a6e8a 40%, #1a9bbf 70%, #2ec4b6 100%);
+    color: white;
+    padding: 48px 40px 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    bottom: -30px; left: 0; right: 0;
+    height: 60px;
+    background: var(--sand);
+    border-radius: 50% 50% 0 0 / 60% 60% 0 0;
+  }
+  .cover .wave-emoji { font-size: 32px; margin-bottom: 8px; }
+  .cover h1 {
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    margin-bottom: 6px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .cover .subtitle {
+    font-size: 14px;
+    opacity: 0.9;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+  }
+  .cover .date-pills {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .date-pill {
+    background: rgba(255,255,255,0.2);
+    border: 1.5px solid rgba(255,255,255,0.5);
+    border-radius: 50px;
+    padding: 6px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    backdrop-filter: blur(6px);
+  }
+
+  /* ── CONTENT WRAPPER ── */
+  .content { padding: 32px 32px 40px; max-width: 800px; margin: 0 auto; }
+
+  /* ── ALERT BOX ── */
+  .alert-box {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 28px;
+    overflow: hidden;
+    border-left: 5px solid var(--coral);
+  }
+  .alert-box .alert-header {
+    background: linear-gradient(90deg, var(--coral), var(--coral-light));
+    color: white;
+    padding: 10px 18px;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 1px;
+  }
+  .alert-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  .alert-item {
+    padding: 10px 18px;
+    border-bottom: 1px solid #f0f0f0;
+    border-right: 1px solid #f0f0f0;
+    font-size: 12px;
+  }
+  .alert-item:nth-child(even) { border-right: none; }
+  .alert-item strong { display: block; color: var(--coral); margin-bottom: 2px; }
+
+  /* ── DAY SECTION ── */
+  .day-section {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 28px;
+    overflow: hidden;
+    page-break-inside: avoid;
+  }
+  .day-header {
+    padding: 16px 24px 14px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .day-header.day1 { background: linear-gradient(135deg, #0a6e8a, #1a9bbf); }
+  .day-header.day2 { background: linear-gradient(135deg, #2e7d5e, #3aad7e); }
+  .day-header.day3 { background: linear-gradient(135deg, #5e3d8a, #8a5ec4); }
+  .day-badge {
+    background: rgba(255,255,255,0.25);
+    border: 2px solid rgba(255,255,255,0.6);
+    border-radius: 10px;
+    color: white;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .day-title {
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .day-sub {
+    color: rgba(255,255,255,0.85);
+    font-size: 11px;
+    font-weight: 400;
+    margin-top: 1px;
+  }
+
+  /* ── TIME BLOCK ── */
+  .time-block {
+    padding: 14px 20px 10px;
+    border-bottom: 1px solid #f0f4f6;
+  }
+  .time-block:last-child { border-bottom: none; }
+  .time-block-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .time-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--ocean-pale);
+    color: var(--ocean);
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 20px;
+    padding: 3px 10px;
+    white-space: nowrap;
+  }
+  .time-label.food { background: #fff3ec; color: var(--coral); }
+  .time-label.evening { background: #f0eafa; color: var(--purple); }
+
+  /* ── ITEM ROWS ── */
+  .item-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 5px 0;
+    font-size: 12.5px;
+  }
+  .item-time {
+    min-width: 42px;
+    color: var(--ocean);
+    font-weight: 700;
+    font-size: 11.5px;
+    padding-top: 1px;
+  }
+  .item-content { flex: 1; }
+  .item-name { font-weight: 700; color: var(--text); }
+  .item-note { color: var(--text-light); font-size: 11.5px; margin-top: 1px; }
+  .warn-tag {
+    display: inline-block;
+    background: #fff8e1;
+    border: 1px solid var(--gold);
+    color: #a0761a;
+    border-radius: 4px;
+    padding: 0 5px;
+    font-size: 10.5px;
+    font-weight: 700;
+    margin-left: 4px;
+  }
+  .ok-tag {
+    display: inline-block;
+    background: #e8f5e9;
+    border: 1px solid #81c784;
+    color: #2e7d32;
+    border-radius: 4px;
+    padding: 0 5px;
+    font-size: 10.5px;
+    font-weight: 700;
+    margin-left: 4px;
+  }
+  .closed-tag {
+    display: inline-block;
+    background: #fce4ec;
+    border: 1px solid #f48fb1;
+    color: #c62828;
+    border-radius: 4px;
+    padding: 0 5px;
+    font-size: 10.5px;
+    font-weight: 700;
+    margin-left: 4px;
+  }
+
+  /* ── ATTRACTION LIST ── */
+  .spot-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 2px 0 4px 2px;
+  }
+  .spot-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    font-size: 12.5px;
+    padding: 3px 0;
+  }
+  .spot-num {
+    min-width: 20px;
+    height: 20px;
+    background: var(--ocean-pale);
+    color: var(--ocean);
+    border-radius: 50%;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .spot-name { font-weight: 700; }
+  .spot-note { color: var(--text-light); font-size: 11px; }
+
+  /* ── FOOD ROW ── */
+  .food-choices {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin: 4px 0;
+  }
+  .food-choice {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: #fafafa;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12.5px;
+    border-left: 3px solid var(--coral-light);
+  }
+  .food-choice.primary { border-left-color: var(--coral); background: #fff7f5; }
+  .food-emoji { font-size: 14px; line-height: 1.3; }
+  .food-name { font-weight: 700; color: var(--text); }
+  .food-hours { color: var(--text-light); font-size: 11.5px; }
+
+  /* ── FIREWORKS / SPECIAL ── */
+  .highlight-box {
+    background: linear-gradient(135deg, #3a1c71, #6a3de8);
+    color: white;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin: 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .highlight-box .hb-emoji { font-size: 22px; }
+  .highlight-box .hb-title { font-size: 14px; font-weight: 700; }
+  .highlight-box .hb-note { font-size: 11px; opacity: 0.85; margin-top: 2px; }
+
+  /* ── TABLES ── */
+  .section-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--ocean);
+    padding: 10px 0 6px;
+    letter-spacing: 1px;
+    border-bottom: 2px solid var(--ocean-pale);
+    margin-bottom: 12px;
+  }
+
+  .info-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+  }
+  .info-table thead tr {
+    background: var(--ocean);
+    color: white;
+  }
+  .info-table thead th {
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    font-size: 11.5px;
+  }
+  .info-table tbody tr:nth-child(odd) { background: white; }
+  .info-table tbody tr:nth-child(even) { background: var(--ocean-pale); }
+  .info-table tbody td {
+    padding: 7px 12px;
+    vertical-align: top;
+    border-bottom: 1px solid rgba(0,0,0,0.04);
+  }
+  .info-table .tag-open {
+    color: #2e7d32;
+    font-weight: 700;
+    background: #e8f5e9;
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 10.5px;
+  }
+  .info-table .tag-closed {
+    color: #c62828;
+    font-weight: 700;
+    background: #fce4ec;
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 10.5px;
+  }
+  .info-table .tag-warn {
+    color: #a0761a;
+    font-weight: 700;
+    background: #fff8e1;
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 10.5px;
+  }
+  .info-table .star { color: var(--coral); }
+
+  /* ── TWO COLUMN SUMMARY ── */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .summary-card {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .summary-card .sc-header {
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 800;
+    color: white;
+    letter-spacing: 1px;
+  }
+  .sc-header.food { background: linear-gradient(90deg, var(--coral), var(--coral-light)); }
+  .sc-header.spot { background: linear-gradient(90deg, var(--ocean), var(--ocean-light)); }
+  .summary-card .sc-body { padding: 10px 14px; }
+  .sc-item {
+    padding: 4px 0;
+    font-size: 12px;
+    border-bottom: 1px dashed #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .sc-item:last-child { border-bottom: none; }
+  .sc-item .sc-name { font-weight: 600; }
+  .sc-item .sc-day { color: var(--text-light); font-size: 11px; white-space: nowrap; }
+
+  /* ── TIDE WARNING ── */
+  .tide-box {
+    background: linear-gradient(135deg, #1565c0, #1976d2);
+    color: white;
+    border-radius: var(--radius);
+    padding: 14px 20px;
+    margin-bottom: 20px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 14px;
+    align-items: start;
+  }
+  .tide-box .tide-icon { font-size: 28px; }
+  .tide-box h3 { font-size: 14px; font-weight: 800; margin-bottom: 8px; letter-spacing: 1px; }
+  .tide-list { list-style: none; }
+  .tide-list li {
+    font-size: 12px;
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+    display: flex;
+    gap: 8px;
+  }
+  .tide-list li:last-child { border-bottom: none; }
+  .tide-type { font-weight: 700; min-width: 60px; opacity: 0.8; }
+
+  /* ── FOOTER ── */
+  .footer {
+    text-align: center;
+    padding: 20px 0 10px;
+    color: var(--text-light);
+    font-size: 11px;
+    border-top: 1px solid var(--sand-dark);
+    margin-top: 20px;
+  }
+
+  /* ── PAGE BREAKS ── */
+  @media print {
+    body { background: white; }
+    .cover::before { display: none; }
+    .day-section { page-break-inside: avoid; }
+    .content { padding: 20px 24px; }
+    .two-col { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="wave-emoji">🌊</div>
+  <h1>澎湖三天行程</h1>
+  <div class="subtitle">精心規劃・吃喝玩樂全攻略</div>
+  <div class="date-pills">
+    <span class="date-pill">🗓️ 7/4（六）抵澎・南海・花火節</span>
+    <span class="date-pill">🗓️ 7/5（日）本島觀光・虎井桶盤</span>
+    <span class="date-pill">🗓️ 7/6（一）北海目斗嶼・返家</span>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- ALERT -->
+  <div class="alert-box">
+    <div class="alert-header">⚠️ 行前必讀提醒</div>
+    <div class="alert-grid">
+      <div class="alert-item"><strong>🌊 潮汐景點</strong>出發前務必查當日潮汐表（推薦 App：潮汐通）</div>
+      <div class="alert-item"><strong>🎆 花火節</strong>確認西嶼場確切地點及開始時間，提早到場</div>
+      <div class="alert-item"><strong>🚢 離島船班</strong>虎井＋桶盤、目斗嶼船班建議提前線上預訂</div>
+      <div class="alert-item"><strong>🚕 7/6 返程</strong>提前叫車（Uber/計程車）前往機場，勿拖到最後</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════ DAY 1 ════════════════════════════════ -->
+  <div class="day-section">
+    <div class="day-header day1">
+      <div>
+        <div class="day-badge">DAY 1 ｜ 7/4（六）</div>
+        <div class="day-title">抵澎日・南海望安・北環西嶼・花火節</div>
+        <div class="day-sub">🛵 機車（上午）→ 🚗 汽車（16:00起）</div>
+      </div>
+    </div>
+
+    <div class="time-block">
+      <div class="time-block-header"><span class="time-label">🌅 早上</span></div>
+      <div class="food-choices">
+        <div class="food-choice primary">
+          <span class="food-emoji">🥐</span>
+          <div>
+            <div class="food-name">鍾記燒餅 <span class="ok-tag">週六✅</span></div>
+            <div class="food-hours">06:00–10:00・或二信飯糰（05:00–12:00）/ 享吃飯糰（07:00–12:00）</div>
+          </div>
+        </div>
+      </div>
+      <ul class="spot-list" style="margin-top:10px;">
+        <li>
+          <div class="spot-num">→</div>
+          <div><span class="spot-name">租車行取機車</span> <span class="spot-note">前往南海遊客中心</span></div>
+        </li>
+        <li>
+          <div class="spot-num">⛵</div>
+          <div><span class="spot-name">南海遊客中心 → 望安</span> <span class="spot-note">天台山・花宅古厝・賞綠蠵龜</span></div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="time-block">
+      <div class="time-block-header"><span class="time-label">☀️ 下午</span></div>
+      <ul class="spot-list">
+        <li><div class="spot-num">⏰</div><div><span class="spot-name">15:20</span>&ensp;搭船返回馬公・辦理 Check In</div></li>
+        <li><div class="spot-num">⏰</div><div><span class="spot-name">16:00</span>&ensp;租車行取汽車・出發北環</div></li>
+      </ul>
+      <ul class="spot-list" style="margin-top:8px;">
+        <li><div class="spot-num">1</div><div><span class="spot-name">🌋 大菓葉柱狀玄武岩</span>&emsp;<span class="spot-note">跨橋後第一站，必打卡</span></div></li>
+        <li><div class="spot-num">2</div><div><span class="spot-name">🏯 漁翁島燈塔</span>&emsp;<span class="spot-note">西台古堡周邊</span></div></li>
+        <li><div class="spot-num">3</div><div><span class="spot-name">🎣 外垵漁港觀景台</span>&emsp;<span class="spot-note">夕陽絕景推薦</span></div></li>
+        <li><div class="spot-num">4</div><div><span class="spot-name">🌊 三仙台（西嶼）</span></div></li>
+        <li><div class="spot-num">5</div><div>
+          <span class="spot-name">🌉 小池角雙曲橋</span><span class="warn-tag">⚠️ 需滿潮</span><span style="color:#888;font-size:11px;">&ensp;/ 池西柱狀玄武岩</span><span class="warn-tag">⚠️ 需乾潮</span>
+          <div class="spot-note">兩者視潮汐二擇一</div>
+        </div></li>
+      </ul>
+      <div style="margin-top:10px;">
+        <div class="food-choices">
+          <div class="food-choice primary">
+            <span class="food-emoji">🍞</span>
+            <div><div class="food-name">海口麵包</div><div class="food-hours">13:00 起售完為止，可在西嶼途中購買</div></div>
+          </div>
+          <div class="food-choice">
+            <span class="food-emoji">🍜</span>
+            <div><div class="food-name">外垵阿明牛肉麵 <span class="ok-tag">週六✅</span></div><div class="food-hours">10:00–18:00，需趕在18:00前抵達西嶼</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="time-block">
+      <div class="time-block-header"><span class="time-label evening">🎆 晚上</span></div>
+      <div class="highlight-box">
+        <div class="hb-emoji">🎆</div>
+        <div>
+          <div class="hb-title">花火節・西嶼場</div>
+          <div class="hb-note">確認確切地點與開始時間，建議提早卡位！</div>
+        </div>
+      </div>
+      <div class="food-choices" style="margin-top:10px;">
+        <div class="food-choice primary">
+          <span class="food-emoji">🔥</span>
+          <div><div class="food-name">燒zone烤物 <span class="ok-tag">週六✅</span><span class="closed-tag">週日休息</span></div><div class="food-hours">19:00–03:00・花火節後回馬公的最佳選擇！</div></div>
+        </div>
+        <div class="food-choice">
+          <span class="food-emoji">🍜</span>
+          <div><div class="food-name">福台排骨麵（備選）</div><div class="food-hours">16:00–22:30・無公休</div></div>
+        </div>
+        <div class="food-choice">
+          <span class="food-emoji">🥟</span>
+          <div><div class="food-name">張記包子（點心/宵夜）</div><div class="food-hours">16:30–22:00・無公休</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════ DAY 2 ════════════════════════════════ -->
+  <div class="day-section">
+    <div class="day-header day2">
+      <div>
+        <div class="day-badge">DAY 2 ｜ 7/5（日）</div>
+        <div class="day-title">本島觀光（湖西・白沙）・虎井嶼・桶盤嶼</div>
+        <div class="day-sub">🚗 汽車（上午）→ 🚢 離島（14:45）→ 🏙️ 市區（傍晚）</div>
+      </div>
+    </div>
+
+    <div class="time-block">
+      <div class="time-block-header"><span class="time-label">🌅 早餐</span></div>
+      <div class="food-choices">
+        <div class="food-choice primary">
+          <span class="food-emoji">🥐</span>
+          <div><div class="food-name">鍾記燒餅 <span class="ok-tag">週日✅</span></div><div class="food-hours">06:00–10:00</div></div>
+        </div>
+        <div class="food-choice">
+          <span class="food-emoji">🍙</span>
+          <div><div class="food-name">享吃飯糰（備選） <span class="ok-tag">週日✅</span></div><div class="food-hours">07:00–12:00</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="time-block">
+      <div class="time-block-header"><span class="time-label">☀️ 上午（汽車）湖西 → 白沙</span></div>
+      <ul class="spot-list">
+        <li><div class="spot-num">1</div><div><span class="spot-name">🐬 沙港</span>&emsp;<span class="spot-note">據說有機會見海豚！</span></div></li>
+        <li><div class="spot-num">2</div><div>
+          <span class="spot-name">🌊 摩西分海</span><span class="warn-tag">⚠️ 需退潮</span>
+          <div class="spot-note">出發前查好潮汐時間再前往</div>
+        </div></li>
+        <li><div class="spot-num">3</div><div><span class="spot-name">🏖️ 林投沙灘</span>&emsp;<span class="spot-note">湖西清淨沙灘</span></div></li>
+        <li><div class="spot-num">4</div><div><span class="spot-name">🏕️ 講美崗哨</span>&emsp;<span class="spot-note">復古碉堡・IG 打卡熱點</span></div></li>
+        <li><div class="spot-num">5</div><div>
+          <span class="spot-name">🚌 後寮天堂路電動接駁車</span><span class="warn-tag">⚠️ 半潮</span>
+          <div class="spot-note">潮汐對了才走得進去</div>
+        </div></li>
+        <li><div class="spot-num">6</div><div><span class="spot-name">🏄 白沙鞦韆</span>&emsp;<span class="spot-note">海景鞦韆打卡點</span></div></li>
+        <li><div class="spot-num">7</div><div><span class="spot-name">🌊 波浪海堤</span>&emsp;<span class="spot-note">視個人意願，略有高度</span></div></li>
+      </ul>
+    </div>
+
+    <div class="time-block">
+      <div class="time-block-header"><span class="time-label food">🍜 午餐（13:30前完成，14:00需還車）</span></div>
+      <div class="food-choices">
+        <div class="food-choice primary">
+          <span class="food-emoji">🍜</span>
+          <div><div class="food-name">⭐ 美東方牛肉麵（白沙就近） <span class="ok-tag">週日✅</span></div><div class="food-hours">10:00–14:30・在白沙直接解決，省去返程時間</div></div>
+        </div>
+        <div class="food-choice">
+          <span class="food-emoji">🐟</span>
+          <div><div class="food-name">菊楓食堂生魚片（返馬公） <span class="ok-tag">週日✅</span></div><div class="food-hours">11:15–13:40</div></div>
+        </div>
+        <div class="food-choice">
+          <span class="food-emoji">🍜</span>
+          <div><div class="food-name">外婆麵猴（返馬公） <span class="ok-tag">週日✅</span></div><div class="food-hours">11:00–14:00</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="time-block">
+      <div class="time-block-header"><span class="time-label">⛵ 下午・離島行程</span></div>
+      <ul class="spot-list">
+        <li><div class="spot-num">⏰</div><div><span class="spot-name">14:00</span>&ensp;還汽車</div></li>
+        <li><div class="spot-num">⏰</div><div><span class="spot-name">14:45</span>&ensp;出發參加虎井嶼 &amp; 桶盤嶼行程 🚢</div></li>
+        <li><div class="spot-num">🔵</div><div><span class="spot-name">虎井嶼：</span>虎井北回歸線標誌・虎井海景公路（超美！）</div></li>
+        <li><div class="spot-num">🪨</div><div><span class="spot-name">桶盤嶼：</span>柱狀玄武岩（澎湖黃石公園）</div></li>
+        <li><div class="spot-num">⏰</div><div><span class="spot-name">~17:30</span>&ensp;返回馬公市區</div></li>
+      </ul>
+    </div>
+
+    <div class="time-block">
+      <div class="time-block-header"><span class="time-label">🛍️ 傍晚・市區散策</span></div>
+      <div class="food-choices">
+        <div class="food-choice primary">
+          <span class="food-emoji">🍗</span>
+          <div><div class="food-name">三哥雞排 <span class="ok-tag">週日✅</span></div><div class="food-hours">15:00–18:30</div></div>
+        </div>
+        <div class="food-choice primary">
+          <span class="food-emoji">🥟</span>
+          <div><div class="food-name">建國炸粿 <span class="ok-tag">週日✅</span></div><div class="food-hours">14:30–18:00・古早味炸粿</div></div>
+        </div>
+        <div class="food-choice" style="border-left-color:#ccc; opacity:0.6;">
+          <span class="food-emoji">❌</span>
+          <div><div class="food-name">楊媽媽韭菜盒 <span class="closed-tag">週日公休</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="time-block">
+      <div class="time-block-header"><span class="time-label food">🍽️ 晚餐</span></div>
+      <div class="food-choices">
+        <div class="food-choice primary">
+          <span class="food-emoji">🍜</span>
+          <div><div class="food-name">⭐ 外婆麵猴 <span class="ok-tag">週日✅</span><span class="closed-tag">週一公休</span></div><div class="food-hours">17:00–20:00・今晚不吃明天就沒機會了！</div></div>
+        </div>
+        <div class="food-choice">
+          <span class="food-emoji">🐟</span>
+          <div><div class="food-name">菊楓食堂（生魚片） <span class="ok-tag">週日✅</span></div><div class="food-hours">17:00–20:00</div></div>
+        </div>
+        <div class="food-choice">
+          <span class="food-emoji">🍜</span>
+          <div><div class="food-name">福台排骨麵</div><div class="food-hours">16:00–22:30・無公休備選</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="time-block">
+      <div class="time-block-header"><span class="time-label">🍧 甜點</span></div>
+      <div class="food-choices">
+        <div class="food-choice primary">
+          <span class="food-emoji">🧊</span>
+          <div><div class="food-name">紫玉仙草冰 <span class="ok-tag">週日✅</span><span class="warn-tag">週三公休</span></div><div class="food-hours">12:30–18:30</div></div>
+        </div>
+        <div class="food-choice">
+          <span class="food-emoji">🍨</span>
+          <div><div class="food-name">群島冰品</div><div class="food-hours">11:00–18:00 / 20:00–01:00・無公休</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════ DAY 3 ════════════════════════════════ -->
+  <div class="day-section">
+    <div class="day-header day3">
+      <div>
+        <div class="day-badge">DAY 3 ｜ 7/6（一）</div>
+        <div class="day-title">本島收尾・目斗嶼・鳥嶼・搭機返家</div>
+        <div class="day-sub">🛵 機車（全天）→ 🚢 北海目斗嶼（14:00）→ ✈️ 搭機返家</div>
+      </div>
+    </div>
+
+    <div class="time-block">
+      <div class="time-block-header"><span class="time-label">🌅 早餐</span></div>
+      <div class="food-choices">
+        <div class="food-choice primary">
+          <span class="food-emoji">🥐</span>
+          <div><div class="food-name">鍾記燒餅 <span class="ok-tag">週一✅</span></div><div class="food-hours">06:00–10:00</div></div>
+        </div>
+        <div class="food-choice">
+          <span class="food-emoji">🍙</span>
+          <div><div class="food-name">二信飯糰（備選）</div><div class="food-hours">05:00–12:00・無公休</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="time-block">
+      <div class="time-block-header"><span class="time-label">☀️ 上午（機車）補遊景點</span></div>
+      <ul class="spot-list">
+        <li><div class="spot-num">🏙️</div><div><span class="spot-name">馬公中央老街</span>&emsp;<span class="spot-note">澎湖最古老街道、天后宮</span></div></li>
+        <li><div class="spot-num">🔄</div><div><span class="spot-name">補遊前兩天未走到的景點</span>&emsp;<span class="spot-note">視剩餘清單彈性調整</span></div></li>
+      </ul>
+    </div>
+
+    <div class="time-block">
+      <div class="time-block-header"><span class="time-label food">🍜 午餐（13:00前完成）</span></div>
+      <div class="food-choices">
+        <div class="food-choice primary">
+          <span class="food-emoji">🐟</span>
+          <div><div class="food-name">⭐ 菊楓食堂（生魚片） <span class="ok-tag">週一✅</span></div><div class="food-hours">11:15–13:40</div></div>
+        </div>
+        <div class="food-choice">
+          <span class="food-emoji">🍜</span>
+          <div><div class="food-name">滿福堂擔仔麵</div><div class="food-hours">11:00–23:00・無公休・隨時都有</div></div>
+        </div>
+        <div class="food-choice" style="border-left-color:#ccc; opacity:0.6;">
+          <span class="food-emoji">❌</span>
+          <div><div class="food-name">外婆麵猴 <span class="closed-tag">週一公休</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="time-block">
+      <div class="time-block-header"><span class="time-label">⛵ 下午・北海目斗嶼</span></div>
+      <ul class="spot-list">
+        <li><div class="spot-num">⏰</div><div><span class="spot-name">14:00</span>&ensp;北海遊客中心搭船 → 目斗嶼 🔭</div></li>
+        <li><div class="spot-num">🏛️</div><div><span class="spot-name">目斗嶼燈塔</span>&emsp;<span class="spot-note">國定古蹟・澎湖最北端・雄偉燈塔</span></div></li>
+        <li><div class="spot-num">🏝️</div><div><span class="spot-name">鳥嶼海中道路</span><span class="warn-tag">⚠️ 需退潮</span>&emsp;<span class="spot-note">視船班是否含鳥嶼站</span></div></li>
+        <li><div class="spot-num">⏰</div><div><span class="spot-name">~17:00</span>&ensp;返回北海遊客中心</div></li>
+      </ul>
+    </div>
+
+    <div class="time-block">
+      <div class="time-block-header"><span class="time-label">✈️ 返程</span></div>
+      <ul class="spot-list">
+        <li><div class="spot-num">🛵</div><div><span class="spot-name">還機車</span></div></li>
+        <li><div class="spot-num">🥙</div><div>
+          <span class="spot-name">候車點心</span>
+          <div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap;">
+            <span>🥙 <strong>老家餡餅</strong> 13:30–19:30 <span class="ok-tag">週一✅</span></span>
+            <span>🥟 <strong>楊媽媽韭菜盒</strong> 13:30–19:00 <span class="ok-tag">週一✅</span></span>
+          </div>
+        </div></li>
+        <li><div class="spot-num">🚕</div><div><span class="spot-name">叫車前往機場</span>&emsp;<span class="spot-note">Uber / 計程車，請提前預約</span></div></li>
+        <li><div class="spot-num">✈️</div><div><span class="spot-name">搭機返家</span>&emsp;<span class="spot-note">帶著滿滿回憶與美食出發！</span></div></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- TIDE REMINDER -->
+  <div class="tide-box">
+    <div class="tide-icon">🌊</div>
+    <div>
+      <h3>潮汐景點提醒</h3>
+      <ul class="tide-list">
+        <li><span class="tide-type">需退潮</span>摩西分海（7/5）・池西柱狀玄武岩（7/4，乾潮）・鳥嶼海中道路（7/6）</li>
+        <li><span class="tide-type">需漲潮</span>小池角雙曲橋（7/4，滿潮）</li>
+        <li><span class="tide-type">需半潮</span>後寮天堂路電動接駁車（7/5）</li>
+        <li><span class="tide-type">推薦App</span>潮汐通 / 澎湖潮汐預報・出發前一晚查好各景點時間</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- RESTAURANT SUMMARY TABLE -->
+  <div class="section-title">📋 餐廳完整清單（含公休日確認）</div>
+  <table class="info-table">
+    <thead>
+      <tr>
+        <th>餐廳</th>
+        <th>建議安排</th>
+        <th>公休提醒</th>
+        <th>營業時間</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>🥐 鍾記燒餅</td><td>7/4・7/5・7/6 早餐</td><td><span class="tag-open">無公休</span></td><td>06:00–10:00</td></tr>
+      <tr><td>🍙 二信飯糰</td><td>7/4 or 7/6 早餐備選</td><td><span class="tag-open">無公休</span></td><td>05:00–12:00</td></tr>
+      <tr><td>🍙 享吃飯糰</td><td>7/4 or 7/5 早餐備選</td><td><span class="tag-warn">週三公休</span></td><td>07:00–12:00</td></tr>
+      <tr><td>🔥 燒zone烤物 ⭐</td><td>7/4 晚餐（花火節後）</td><td><span class="tag-closed">週日公休</span></td><td>19:00–03:00</td></tr>
+      <tr><td>🍜 外婆麵猴 ⭐</td><td>7/5 午/晚餐</td><td><span class="tag-closed">週一公休</span></td><td>11:00–14:00 / 17:00–20:00</td></tr>
+      <tr><td>🥙 老家餡餅</td><td>7/6 午後點心</td><td><span class="tag-closed">週六公休</span></td><td>13:30–19:30</td></tr>
+      <tr><td>🥟 楊媽媽韭菜盒</td><td>7/6 候機點心</td><td><span class="tag-closed">週日公休</span></td><td>13:30–19:00</td></tr>
+      <tr><td>🐟 菊楓食堂 ⭐</td><td>7/5 or 7/6 午/晚餐</td><td><span class="tag-open">無公休</span></td><td>11:15–13:40 / 17:00–20:00</td></tr>
+      <tr><td>🍜 滿福堂擔仔麵</td><td>7/6 午餐備選</td><td><span class="tag-open">無公休</span></td><td>11:00–23:00</td></tr>
+      <tr><td>🍜 福台排骨麵</td><td>7/4 or 7/5 晚餐備選</td><td><span class="tag-open">無公休</span></td><td>16:00–22:30</td></tr>
+      <tr><td>🥟 張記包子</td><td>7/4 宵夜/點心</td><td><span class="tag-open">無公休</span></td><td>16:30–22:00</td></tr>
+      <tr><td>🧊 紫玉仙草冰</td><td>7/5 甜點</td><td><span class="tag-warn">週三公休</span></td><td>12:30–18:30</td></tr>
+      <tr><td>🍨 群島冰品</td><td>7/5 甜點備選</td><td><span class="tag-open">無公休</span></td><td>11:00–18:00 / 20:00–01:00</td></tr>
+      <tr><td>🍗 三哥雞排</td><td>7/5 下午點心</td><td><span class="tag-open">無公休</span></td><td>15:00–18:30</td></tr>
+      <tr><td>🥟 建國炸粿</td><td>7/5 下午點心</td><td><span class="tag-open">無公休</span></td><td>14:30–18:00</td></tr>
+      <tr><td>🍜 美東方牛肉麵</td><td>7/5 午餐（白沙）</td><td><span class="tag-open">無公休</span></td><td>10:00–14:30</td></tr>
+      <tr><td>🍞 海口麵包</td><td>7/4 西嶼途中</td><td>—</td><td>13:00 起，售完為止</td></tr>
+      <tr><td>🍜 外垵阿明牛肉麵</td><td>7/4 西嶼途中</td><td><span class="tag-open">無公休</span></td><td>10:00–18:00</td></tr>
+      <tr style="opacity:0.55;"><td>❌ 大炮燒</td><td colspan="3">暫時關店，略過</td></tr>
+      <tr style="opacity:0.55;"><td>❌ 嘉嘉碳烤</td><td colspan="3">評價不佳，略過</td></tr>
+      <tr style="opacity:0.55;"><td>🐟 魚好（西嶼）</td><td colspan="3">11:30–17:00，7/4 取車後已趕不及，其餘天不在西嶼</td></tr>
+      <tr style="opacity:0.55;"><td>🍜 外垵麗敏的店</td><td colspan="3">06:30–14:00，7/4 下午才到西嶼，趕不及</td></tr>
+      <tr style="opacity:0.55;"><td>🍵 刺蝟與熊</td><td colspan="3">週一二三公休，7/4（六）17:00 關門，取車後趕不及</td></tr>
+    </tbody>
+  </table>
+
+  <!-- SPOT CHECKLIST -->
+  <div class="section-title" style="margin-top:24px;">🗺️ 景點總覽</div>
+  <table class="info-table">
+    <thead>
+      <tr><th>景點</th><th>安排日</th><th>備注</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>⛵ 望安（南海）</td><td>7/4 上午</td><td>天台山・花宅古厝</td></tr>
+      <tr><td>🌋 大菓葉柱狀玄武岩</td><td>7/4 下午</td><td>西嶼必訪</td></tr>
+      <tr><td>🏯 漁翁島燈塔</td><td>7/4 下午</td><td></td></tr>
+      <tr><td>🎣 外垵漁港觀景台</td><td>7/4 下午</td><td>夕陽絕景</td></tr>
+      <tr><td>🌊 三仙台（西嶼）</td><td>7/4 下午</td><td></td></tr>
+      <tr><td>🌉 小池角雙曲橋</td><td>7/4 下午</td><td>⚠️ 需滿潮</td></tr>
+      <tr><td>🪨 池西柱狀玄武岩</td><td>7/4 下午</td><td>⚠️ 需乾潮（與雙曲橋擇一）</td></tr>
+      <tr><td>🐬 沙港</td><td>7/5 上午</td><td>湖西</td></tr>
+      <tr><td>🌊 摩西分海</td><td>7/5 上午</td><td>⚠️ 需退潮</td></tr>
+      <tr><td>🏖️ 林投沙灘</td><td>7/5 上午</td><td>湖西</td></tr>
+      <tr><td>🏕️ 講美崗哨</td><td>7/5 上午</td><td>白沙，IG打卡</td></tr>
+      <tr><td>🚌 後寮天堂路</td><td>7/5 上午</td><td>⚠️ 需半潮</td></tr>
+      <tr><td>🏄 白沙鞦韆</td><td>7/5 上午</td><td>白沙</td></tr>
+      <tr><td>🌊 波浪海堤</td><td>7/5 上午</td><td>視個人意願</td></tr>
+      <tr><td>🔵 虎井北回歸線</td><td>7/5 下午</td><td>虎井嶼</td></tr>
+      <tr><td>📸 虎井海景公路</td><td>7/5 下午</td><td>虎井嶼</td></tr>
+      <tr><td>🪨 桶盤嶼玄武岩</td><td>7/5 下午</td><td>澎湖黃石公園</td></tr>
+      <tr><td>🔭 目斗嶼燈塔</td><td>7/6 下午</td><td>澎湖最北端</td></tr>
+      <tr><td>🏝️ 鳥嶼海中道路</td><td>7/6 下午</td><td>視船班是否含鳥嶼站</td></tr>
+    </tbody>
+  </table>
+
+  <div class="footer">
+    🌊 澎湖三天行程規劃・2026/07/01 製作・行程日期 2026/07/04–07/06 🌊
+  </div>
+</div>
+
+</body>
+</html>
